@@ -1,0 +1,31 @@
+{
+  "name": "baldr-claude",
+  "version": "0.1.0",
+  "description": "A high-speed quarter-view mech action game in the lineage of BALDR SKY, built on three.js.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "shot": "node tools/capture.mjs",
+    "qa": "node tools/qa.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HisatoF/baldr_claude.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HisatoF/baldr_claude/issues"
+  },
+  "homepage": "https://github.com/HisatoF/baldr_claude#readme",
+  "dependencies": {
+    "playwright": "^1.62.1",
+    "three": "^0.185.1",
+    "vite": "^7.3.6"
+  },
+  "private": true,
+  "type": "module"
+}
