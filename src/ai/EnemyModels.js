@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTE } from '../render/Palette.js';
+import { makeMechSurface } from '../combat/MechMaterials.js';
 
 /**
  * Enemy archetype models.
@@ -99,7 +100,7 @@ function buildGrunt() {
   put(parts, new THREE.BoxGeometry(2.5, 0.62, 1.5), 0, 1.42, 0, ARMOR);
   put(parts, new THREE.BoxGeometry(1.7, 0.40, 1.2), 0, 1.86, 0.05, ARMOR_D, { rz: 0.06 });
   // Cyclops sensor
-  put(parts, new THREE.SphereGeometry(0.28, 10, 8), 0, 1.82, 0.72, EYE, { emissive: 3.4 });
+  put(parts, new THREE.SphereGeometry(0.28, 10, 8), 0, 1.82, 0.72, EYE, { emissive: 2.1 });
   put(parts, new THREE.BoxGeometry(0.9, 0.3, 0.2), 0, 1.82, 0.66, ARMOR_D);
   // Stubby legs, splayed
   for (const s of [-1, 1]) {
@@ -121,7 +122,7 @@ function buildSniper() {
   put(parts, new THREE.BoxGeometry(0.8, 1.5, 0.8), 0, 3.2, 0, ARMOR);
   put(parts, new THREE.BoxGeometry(0.6, 0.5, 0.6), 0, 4.15, 0, ARMOR_D);
   // Single glowing optic
-  put(parts, new THREE.SphereGeometry(0.19, 10, 8), 0, 4.15, 0.34, PALETTE.magenta, { emissive: 3.6 });
+  put(parts, new THREE.SphereGeometry(0.19, 10, 8), 0, 4.15, 0.34, PALETTE.magenta, { emissive: 2.2 });
   // The signature: one very long barrel
   put(parts, new THREE.CylinderGeometry(0.11, 0.15, 3.4, 8), 0.55, 3.5, 0.5, FRAME, { rx: Math.PI / 2 });
   put(parts, new THREE.BoxGeometry(0.3, 0.3, 0.7), 0.55, 3.5, 1.5, ARMOR_D);
@@ -159,10 +160,10 @@ function buildBrute() {
     put(parts, new THREE.BoxGeometry(0.9, 0.3, 1.1), s * 0.62, 0.2, 0.08, ARMOR_D);
   }
   // Glowing chest core — the obvious weak point
-  put(parts, new THREE.BoxGeometry(0.7, 0.7, 0.2), 0, 2.7, 0.82, HOT, { emissive: 3.0 });
+  put(parts, new THREE.BoxGeometry(0.7, 0.7, 0.2), 0, 2.7, 0.82, HOT, { emissive: 1.9 });
   // Head is small and sunk between the shoulders
   put(parts, new THREE.BoxGeometry(0.6, 0.45, 0.6), 0, 4.2, 0.1, ARMOR_D);
-  put(parts, new THREE.BoxGeometry(0.42, 0.12, 0.1), 0, 4.24, 0.42, EYE, { emissive: 3.2 });
+  put(parts, new THREE.BoxGeometry(0.42, 0.12, 0.1), 0, 4.24, 0.42, EYE, { emissive: 2.0 });
   greeble(parts, rnd, 0, 3.0, 0.4, 2.6, 14, FRAME);
   return mergeGeometries(parts, false);
 }
@@ -178,9 +179,9 @@ function buildFlyer() {
     put(parts, new THREE.BoxGeometry(1.5, 0.12, 0.55), s * 0.95, 0.05, -0.15, ARMOR, { ry: s * 0.42 });
     put(parts, new THREE.CylinderGeometry(0.14, 0.1, 0.5, 8), s * 1.5, -0.05, -0.35, FRAME, { rx: Math.PI / 2 });
     // Thruster glow
-    put(parts, new THREE.SphereGeometry(0.13, 8, 6), s * 1.5, -0.05, -0.62, PALETTE.cyan, { emissive: 3.2 });
+    put(parts, new THREE.SphereGeometry(0.13, 8, 6), s * 1.5, -0.05, -0.62, PALETTE.cyan, { emissive: 2.0 });
   }
-  put(parts, new THREE.SphereGeometry(0.2, 10, 8), 0, 0.02, 0.55, EYE, { emissive: 3.4 });
+  put(parts, new THREE.SphereGeometry(0.2, 10, 8), 0, 0.02, 0.55, EYE, { emissive: 2.1 });
   greeble(parts, rnd, 0, 0, 0, 1.0, 6, FRAME);
   return mergeGeometries(parts, false);
 }
@@ -194,7 +195,7 @@ function buildBoss() {
   put(parts, new THREE.BoxGeometry(4.2, 3.4, 2.8), 0, 6.4, 0, ARMOR);
   put(parts, new THREE.BoxGeometry(6.4, 1.5, 3.0), 0, 8.3, 0, ARMOR_D);
   // Exposed core — the weak point, and the phase indicator.
-  put(parts, new THREE.SphereGeometry(1.05, 14, 12), 0, 6.3, 1.35, HOT, { emissive: 3.2 });
+  put(parts, new THREE.SphereGeometry(1.05, 14, 12), 0, 6.3, 1.35, HOT, { emissive: 2.0 });
   put(parts, new THREE.TorusGeometry(1.35, 0.22, 8, 20), 0, 6.3, 1.4, FRAME, { rx: 0 });
 
   for (const side of [-1, 1]) {
@@ -216,7 +217,7 @@ function buildBoss() {
 
   // Head cluster, sunk low and wide
   put(parts, new THREE.BoxGeometry(1.5, 0.9, 1.3), 0, 9.4, 0.2, ARMOR_D);
-  put(parts, new THREE.BoxGeometry(1.1, 0.18, 0.14), 0, 9.45, 0.88, EYE, { emissive: 3.6 });
+  put(parts, new THREE.BoxGeometry(1.1, 0.18, 0.14), 0, 9.45, 0.88, EYE, { emissive: 2.2 });
 
   greeble(parts, rnd, 0, 6.0, 0.6, 5.2, 26, FRAME);
   return mergeGeometries(parts, false);
@@ -238,12 +239,26 @@ export function buildEnemyRenderer() {
   const group = new THREE.Group();
   group.name = 'ai.enemies';
 
+  // Enemies share the mech's procedural hard-surface maps.
+  //
+  // They were previously vertex-coloured MeshStandardMaterial with NO maps at all —
+  // flat plastic slabs, which the rubric rejects on sight. Reusing the same surface
+  // generator gives them panel grain, micro-scratch and roughness variation for one
+  // extra texture fetch, and has the side benefit that hostiles and the player read
+  // as built in the same factory.
+  const surface = makeMechSurface(512, 0x3ee11a7);
   const material = new THREE.MeshStandardMaterial({
     vertexColors: true,
-    roughness: 0.62,
-    metalness: 0.45,
-    envMapIntensity: 1.2,
+    map: surface.map,
+    normalMap: surface.normalMap,
+    roughnessMap: surface.roughnessMap,
+    roughness: 0.86,
+    // Not fully metallic: a high metalness leaves no diffuse response and the unit
+    // collapses to a black cutout under night lighting.
+    metalness: 0.42,
+    envMapIntensity: 1.25,
   });
+  material.normalScale.set(0.7, 0.7);
 
   const pools = {};
   const disposables = [material];
