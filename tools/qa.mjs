@@ -88,6 +88,8 @@ const report = {
     perf: r.perf ?? null,
     errors: r.errors ?? [],
     warningCount: r.warnings?.length ?? 0,
+    // Keep the text, not just the count: a bare count cannot be triaged.
+    warnings: (r.warnings ?? []).slice(0, 10),
   })),
   violations,
   pass: violations.length === 0,

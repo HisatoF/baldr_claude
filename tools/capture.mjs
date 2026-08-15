@@ -35,8 +35,11 @@ export const PRESETS = {
   boot:    { steps: 30,   desc: 'first moments after boot' },
   idle:    { steps: 240,  desc: 'player idle, 2s in' },
   combat:  { steps: 900,  desc: 'mid-combat, 7.5s in' },
-  heavy:   { steps: 1800, desc: 'peak particle load, 15s in' },
-  late:    { steps: 3600, desc: '30s in — wave escalation' },
+  // Offset off the round wave boundaries: at exactly 1800 the arena had just been
+  // cleared, so the "peak load" shot was byte-identical in cost to the idle shot
+  // and proved nothing about readability under pressure.
+  heavy:   { steps: 2040, desc: 'mid-wave, heavy load' },
+  late:    { steps: 3480, desc: '29s in — wave escalation' },
 };
 
 function arg(name, def = null) {

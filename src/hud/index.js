@@ -231,12 +231,15 @@ export function createHudModule() {
       lastComboCount = cc.count;
       comboPunch = damp(comboPunch, 0, 9, dt);
 
-      const active = cc.count > 1 && cc.timeLeft > 0;
+      // A zero-value readout is placeholder content and must never render.
+      const active = cc.count > 1 && cc.timeLeft > 0 && cc.damage > 0;
       shown.comboAlpha = damp(shown.comboAlpha, active ? 1 : 0, 10, dt);
 
       if (shown.comboAlpha > 0.01) {
         const cx = W * 0.5;
-        const cy = H * 0.19;
+        // Kept below the horizon. At 0.19 the counter floated in the sky,
+        // detached from the fight it was describing.
+        const cy = H * 0.34;
         const scale = 1 + Ease.outBack(comboPunch) * 0.22;
         const col = RANK_COLOR[cc.rank] || CYAN;
 

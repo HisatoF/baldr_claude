@@ -51,7 +51,24 @@ export class DemoPilot {
     this._clear(raw);
     this.tick++;
 
-    const target = ctx.combat.lockTarget;
+    // Fall back to the nearest live enemy when nothing is locked. Lock-on only
+    // reaches 46 units; relying on it alone made the pilot wander AWAY from a
+    // distant wave, which is how captures ended up showing an empty arena.
+    let target = ctx.combat.lockTarget;
+    if (!target) {
+      const list = ctx.ai?.enemies;
+      if (list && list.length) {
+        let best = null;
+        let bestD = Infinity;
+        for (let i = 0; i < list.length; i++) {
+          const e = list[i];
+          if (!e || e.flags & Flags.DEAD) continue;
+          const d = Math.abs(e.pos.x - player.pos.x);
+          if (d < bestD) { bestD = d; best = e; }
+        }
+        target = best;
+      }
+    }
     const grounded = player.grounded;
     if (!grounded) this.airTime += dt;
     else this.airTime = 0;

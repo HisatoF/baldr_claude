@@ -1130,13 +1130,17 @@ export function createMech(opts = {}) {
       transparent: true,
       opacity: 0.75,
       depthWrite: false,
+      depthTest: false,
       color: 0x000000,
       toneMapped: false,
     })
   );
   contactShadow.rotation.x = -Math.PI / 2;
   contactShadow.position.y = 0.02;
-  contactShadow.renderOrder = -1;
+  // Draws AFTER the ground, not before. At renderOrder -1 the shadow was
+  // rasterised first and the ground then painted straight over it, which is why
+  // the mech appeared pasted onto the road with no occlusion at all.
+  contactShadow.renderOrder = 3;
   root.add(contactShadow);
 
   const mech = {

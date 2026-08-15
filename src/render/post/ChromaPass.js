@@ -21,7 +21,7 @@ const ChromaShader = {
     tDiffuse: { value: null },
     uAmount: { value: 0.0016 }, // base fringe, in uv units at the corner
     uImpact: { value: 0.0 }, // 0..1, punched up on hits
-    uImpactScale: { value: 0.0035 },
+    uImpactScale: { value: 0.0016 },
     uBarrel: { value: 0.35 }, // extra edge falloff shaping
   },
 
@@ -46,7 +46,11 @@ const ChromaShader = {
       vec2 d = vUv - 0.5;
       float r2 = dot(d, d);
 
-      float amt = (uAmount + uImpact * uImpactScale) * (0.18 + r2 * (2.4 + uBarrel * 2.0));
+      // Screen-centre is fully clean and the ramp starts further out, so the
+      // player mech — which the camera keeps near the middle — never carries a
+      // visible colour ghost on its edges. Fringing belongs at the corners.
+      float edgeMask = smoothstep(0.20, 0.85, r2);
+      float amt = (uAmount + uImpact * uImpactScale) * edgeMask * (0.18 + r2 * (2.4 + uBarrel * 2.0));
       vec2 off = d * amt * 8.0;
 
       #if defined(CA_SPECTRAL)

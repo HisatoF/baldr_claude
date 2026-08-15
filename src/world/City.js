@@ -19,12 +19,24 @@ import { PALETTE } from '../render/Palette.js';
  * budget for the entire game is 220 and the mech and VFX need most of them.
  */
 
-/** A tileable window-grid texture: the emissive that makes a black box read as a tower. */
-function makeWindowGrid(seed = 1234, cols = 10, rows = 18) {
-  // Cells are deliberately large. Fine-grained window grids resolve to television
-  // static at any real viewing distance; big cells with dark gaps read as floors.
-  const cw = 26;
-  const ch = 20;
+/**
+ * A tileable facade: the emissive that makes a black box read as a tower.
+ *
+ * The first version scattered independently-random coloured cells, which resolves to
+ * television static at any real viewing distance — the eye reads noise, not a
+ * building. What makes a facade legible is *structure*, so this builds one:
+ *
+ *   - continuous floor bands with dark spandrel between them, so horizontals read;
+ *   - vertical mullions at a fixed column pitch, so verticals read;
+ *   - a consistent window aspect ratio (wider than tall, as glazing actually is);
+ *   - occupancy in CLUSTERS — lit offices sit next to lit offices, whole floors go
+ *     dark — because random per-cell occupancy has no visual grammar;
+ *   - a hue range restricted to the scene palette, with warm interior light as the
+ *     minority accent rather than free-for-all RGB.
+ */
+function makeWindowGrid(seed = 1234, cols = 12, rows = 20) {
+  const cw = 24; // column pitch
+  const ch = 22; // floor pitch
   const w = cols * cw;
   const h = rows * ch;
   const c = document.createElement('canvas');
@@ -33,44 +45,55 @@ function makeWindowGrid(seed = 1234, cols = 10, rows = 18) {
   const g = c.getContext('2d');
   const rnd = mulberry32(seed);
 
-  g.fillStyle = '#000000';
+  // Base: the unlit building skin, not pure black, so facades keep some form.
+  g.fillStyle = '#05070d';
   g.fillRect(0, 0, w, h);
 
-  // Window colours: mostly cold office light, a minority warm, a few accent neon.
-  const warm = [255, 196, 128];
-  const cold = [176, 214, 255];
-  const neon = [
-    [90, 217, 255],
-    [255, 61, 154],
-    [255, 166, 61],
-  ];
+  // Structural grid: spandrel bands and mullions drawn first, windows sit between.
+  g.fillStyle = '#0a0e17';
+  for (let ry = 0; ry < rows; ry++) g.fillRect(0, ry * ch, w, 5); // floor slab edge
+  for (let rx = 0; rx < cols; rx++) g.fillRect(rx * cw, 0, 4, h); // mullion
+
+  // Palette-restricted interior light. Cold office white dominates; warm sodium is
+  // the accent. No saturated primaries.
+  const COLD = [172, 206, 240];
+  const COLDER = [140, 180, 226];
+  const WARM = [255, 198, 140];
+
+  // Per-column and per-floor occupancy biases produce clustering for free.
+  const colBias = new Array(cols);
+  for (let i = 0; i < cols; i++) colBias[i] = rnd();
+  const floorBias = new Array(rows);
+  for (let i = 0; i < rows; i++) floorBias[i] = rnd();
+
+  const winW = cw - 9;
+  const winH = ch - 11;
 
   for (let ry = 0; ry < rows; ry++) {
-    // Whole floors go dark — an evenly random grid reads as noise, not architecture.
-    const floorLit = rnd() > 0.18;
+    // Whole floors go dark — mechanical levels, vacant storeys.
+    const floorDark = floorBias[ry] < 0.20;
+    // Floors share a colour temperature: one tenant, one lighting spec.
+    const floorWarm = rnd() < 0.22;
+
     for (let rx = 0; rx < cols; rx++) {
-      if (!floorLit && rnd() > 0.15) continue;
-      if (rnd() > 0.42) continue;
+      const p = floorDark ? 0.06 : 0.30 + colBias[rx] * 0.5 + (1 - floorBias[ry]) * 0.22;
+      if (rnd() > p) continue;
 
-      let col;
-      const r = rnd();
-      if (r < 0.06) col = neon[(rnd() * neon.length) | 0];
-      else if (r < 0.3) col = warm;
-      else col = cold;
+      const base = floorWarm && rnd() < 0.7 ? WARM : rnd() < 0.4 ? COLDER : COLD;
+      // Brightness varies per window but stays in a narrow band, so the facade
+      // has tonal life without individual cells screaming.
+      const b = 0.45 + rnd() * 0.5;
 
-      // Vary brightness per window so the facade has tonal life.
-      const b = 0.35 + rnd() * 0.65;
-      const x = rx * cw + 3;
-      const y = ry * ch + 3;
-      const ww = cw - 11;
-      const hh = ch - 9;
+      const x = rx * cw + 6;
+      const y = ry * ch + 8;
 
-      g.fillStyle = `rgb(${(col[0] * b) | 0},${(col[1] * b) | 0},${(col[2] * b) | 0})`;
-      g.fillRect(x, y, ww, hh);
+      g.fillStyle = `rgb(${(base[0] * b) | 0},${(base[1] * b) | 0},${(base[2] * b) | 0})`;
+      g.fillRect(x, y, winW, winH);
 
-      // A dimmer halo cell, so bloom has something soft to catch rather than a hard edge.
-      g.globalAlpha = 0.22 * b;
-      g.fillRect(x - 2, y - 2, ww + 4, hh + 4);
+      // Sill glow: a dim bleed below each pane, which is what gives a night facade
+      // its soft vertical smear rather than a grid of hard rectangles.
+      g.globalAlpha = 0.20 * b;
+      g.fillRect(x - 2, y - 2, winW + 4, winH + 6);
       g.globalAlpha = 1;
     }
   }

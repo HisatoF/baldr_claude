@@ -143,7 +143,11 @@ export function createAiModule() {
         const err = dist - want;
         // Deadband stops enemies jittering on the spot at their preferred range.
         if (Math.abs(err) > 1.4) {
-          e.vel.x = damp(e.vel.x, sign(err) * sign(dx) * u.speed, 6, dt);
+          // Sprint when far behind. Without this an enemy left outside the arena
+          // closes at walking pace and simply never arrives — the wave counter
+          // says HOSTILES 01 while the screen stays empty.
+          const chase = dist > 34 ? 2.4 : dist > 18 ? 1.5 : 1;
+          e.vel.x = damp(e.vel.x, sign(err) * sign(dx) * u.speed * chase, 6, dt);
         } else {
           e.vel.x = damp(e.vel.x, 0, 8, dt);
         }
@@ -312,9 +316,9 @@ export function createAiModule() {
     // Every fifth wave is a boss, with a thin screen of escorts.
     if (waveIndex % 5 === 0) {
       const side = rng.bool() ? 1 : -1;
-      api.spawnEnemy('boss', clamp(px + side * 34, -100, 100), 8);
+      api.spawnEnemy('boss', clamp(px + side * 26, -100, 100), 8);
       for (let i = 0; i < 3; i++) {
-        api.spawnEnemy('grunt', clamp(px + side * rng.range(24, 48), -112, 112), 6);
+        api.spawnEnemy('grunt', clamp(px + side * rng.range(18, 30), -112, 112), 6);
       }
       ctx.bus.emit('wave:started', { index: waveIndex, count: 4 });
       ctx.hud?.notify?.('WARNING — HEAVY UNIT', 'warn');
@@ -326,7 +330,7 @@ export function createAiModule() {
     for (let i = 0; i < n; i++) {
       // Spawn off both sides, outside the camera, so they walk into frame.
       const side = rng.bool() ? 1 : -1;
-      const x = clamp(px + side * rng.range(30, 56), -115, 115);
+      const x = clamp(px + side * rng.range(20, 34), -115, 115);
 
       let type = 'grunt';
       const r = rng.float();
