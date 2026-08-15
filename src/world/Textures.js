@@ -1206,7 +1206,7 @@ export function makeSkyTexture(o = {}) {
           let du = Math.abs(u - L.u);
           if (du > 0.5) du = 1 - du;
           const hx = Math.exp(-(du * du) / (2 * L.wid * L.wid));
-          const hy = Math.exp(-Math.pow(Math.max(0, (0.5 - v)) / 0.16, 1.7)) * (v <= 0.52 ? 1 : Math.exp(-((v - 0.52) / 0.05) ** 2));
+          const hy = Math.exp(-Math.pow(Math.max(0, (0.5 - v)) / 0.16, 1.7)) * (v <= 0.52 ? 1 : Math.exp(-(((v - 0.52) / 0.05) ** 2)));
           const a = L.amp * hx * hy;
           gr += L.col[0] * a; gg += L.col[1] * a; gb += L.col[2] * a;
         }

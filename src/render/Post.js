@@ -248,7 +248,10 @@ export class Post {
     this._impact = damp(this._impact, 0, 9, dt);
 
     this.motionBlur.uniforms.uDash.value = this._dash;
-    this.motionBlur.uniforms.uRadial.value = 0.006 + this._impact * 0.02;
+    // Baseline radial blur is kept very low. A constant lens-streak reads as a
+    // cheap trick and, at any real strength, dissolves fine background detail
+    // (skyline windows, panel lines) into mush on every single frame.
+    this.motionBlur.uniforms.uRadial.value = 0.0012 + this._impact * 0.022 + this._dash * 0.012;
     this.chroma.uniforms.uImpact.value = this._impact;
     this.grade.uniforms.uImpactFlash.value = this._flash;
     this.grade.uniforms.uTime.value = elapsed;
