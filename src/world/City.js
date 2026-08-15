@@ -146,6 +146,7 @@ export function buildCity(opts = {}) {
   const q = new THREE.Quaternion();
   const pos = new THREE.Vector3();
   const scl = new THREE.Vector3();
+  const tmpE2 = new THREE.Euler();
 
   /* ---------------- sky dome ---------------- */
   // The skyline needs something to be a silhouette *against*. A flat clear-colour
@@ -293,30 +294,29 @@ export function buildCity(opts = {}) {
   }
 
   /* ---------------- foreground framing ---------------- */
-  // Nearly black, unlit, in front of the action. These give the eye a nearest
-  // reference point and make the midground read as "further away".
-  // Placement here is governed by angular size, not by world size. The camera sits at
-  // z≈42 looking at the z=0 play plane, so anything parked at z=30 is only ~12 units
-  // from the lens and a single slab that width would black out the entire frame.
-  // These are therefore narrow pillars, well spaced, and kept back to z≈16.
-  const foreMat = new THREE.MeshBasicMaterial({ color: 0x01020a, fog: false });
+  // LOW, not tall.
+  //
+  // Tall near-black pillars were tried first and consistently read as an unlit
+  // monolith dropped into the middle of the shot rather than as depth — at a 24-unit
+  // camera distance anything with real height simply occludes the fight. Keeping the
+  // band low puts silhouette along the bottom edge, which frames the action and gives
+  // the eye a nearest reference without ever covering it.
+  const foreMat = new THREE.MeshBasicMaterial({ color: 0x02030b, fog: false });
   disposables.push(foreMat);
-  const FORE_N = 8;
-  const FORE_Z = 5;
+  const FORE_N = 26;
+  const FORE_Z = 11;
   const foreInst = new THREE.InstancedMesh(box, foreMat, FORE_N);
   foreInst.frustumCulled = false;
   for (let i = 0; i < FORE_N; i++) {
-    const w = 1.5 + rnd() * 1.6;
-    const h = 20 + rnd() * 18;
-    const d = 1.5 + rnd() * 1.6;
-    // ~48 units apart, so at most one is ever inside the frame at a time.
-    let x = -190 + (380 / FORE_N) * i + (rnd() - 0.5) * 16;
-    // Keep a clear channel around the player's start so the opening frame is not
-    // occluded by a near-black pillar sitting dead centre.
-    if (Math.abs(x) < 26) x += x < 0 ? -26 : 26;
-    pos.set(x, h * 0.5 - 9, FORE_Z + (rnd() - 0.5) * 5);
+    const w = 3.5 + rnd() * 7;
+    const h = 1.6 + rnd() * 2.4;
+    const d = 2 + rnd() * 3;
+    const x = -200 + (400 / FORE_N) * i + (rnd() - 0.5) * 12;
+    // Sunk below the road line so only the top edge intrudes into frame.
+    pos.set(x, -2.6 + h * 0.5, FORE_Z + (rnd() - 0.5) * 4);
+    tmpE2.set(0, rnd() * 0.6 - 0.3, (rnd() - 0.5) * 0.16);
+    q.setFromEuler(tmpE2);
     scl.set(w, h, d);
-    q.identity();
     m4.compose(pos, q, scl);
     foreInst.setMatrixAt(i, m4);
   }
