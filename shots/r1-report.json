@@ -1,0 +1,110 @@
+{
+  "label": "r1",
+  "seed": 1592594996,
+  "generatedAt": "2026-08-15T13:01:55.562Z",
+  "note": "fps is measured under SwiftShader software WebGL and is NOT a valid performance signal. Judge cost by drawCalls / triangles / simMs only.",
+  "budget": {
+    "drawCalls": 220,
+    "triangles": 1600000,
+    "simMs": 4
+  },
+  "shots": [
+    {
+      "preset": "boot",
+      "desc": "first moments after boot",
+      "image": "shots/r1-boot.png",
+      "steps": 30,
+      "ok": true,
+      "perf": {
+        "fps": 7.6,
+        "simMs": 0.03,
+        "frameMs": 330.46,
+        "drawCalls": 74,
+        "triangles": 89628,
+        "programs": 31,
+        "geometries": 38,
+        "textures": 41
+      },
+      "errors": [],
+      "warningCount": 1
+    },
+    {
+      "preset": "idle",
+      "desc": "player idle, 2s in",
+      "image": "shots/r1-idle.png",
+      "steps": 240,
+      "ok": true,
+      "perf": {
+        "fps": 0,
+        "simMs": 0.02,
+        "frameMs": 0.52,
+        "drawCalls": 73,
+        "triangles": 89626,
+        "programs": 31,
+        "geometries": 38,
+        "textures": 41
+      },
+      "errors": [],
+      "warningCount": 1
+    },
+    {
+      "preset": "combat",
+      "desc": "mid-combat, 7.5s in",
+      "image": "shots/r1-combat.png",
+      "steps": 900,
+      "ok": true,
+      "perf": {
+        "fps": 4,
+        "simMs": 0.01,
+        "frameMs": 0.75,
+        "drawCalls": 75,
+        "triangles": 90442,
+        "programs": 33,
+        "geometries": 39,
+        "textures": 42
+      },
+      "errors": [],
+      "warningCount": 1
+    },
+    {
+      "preset": "heavy",
+      "desc": "peak particle load, 15s in",
+      "image": "shots/r1-heavy.png",
+      "steps": 1800,
+      "ok": true,
+      "perf": {
+        "fps": 0,
+        "simMs": 0,
+        "frameMs": 0.41,
+        "drawCalls": 73,
+        "triangles": 89626,
+        "programs": 33,
+        "geometries": 39,
+        "textures": 42
+      },
+      "errors": [],
+      "warningCount": 1
+    },
+    {
+      "preset": "late",
+      "desc": "30s in — wave escalation",
+      "image": "shots/r1-late.png",
+      "steps": 3600,
+      "ok": true,
+      "perf": {
+        "fps": 0,
+        "simMs": 0,
+        "frameMs": 0.28,
+        "drawCalls": 80,
+        "triangles": 94020,
+        "programs": 33,
+        "geometries": 39,
+        "textures": 42
+      },
+      "errors": [],
+      "warningCount": 1
+    }
+  ],
+  "violations": [],
+  "pass": true
+}
