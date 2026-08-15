@@ -25,7 +25,7 @@ export class CharacterLight {
     this.group.name = 'combat.characterLight';
 
     // Key: cool and high, from the same side as the world key so the two agree.
-    this.key = new THREE.PointLight(PALETTE.keyLight, 250, 17, 2);
+    this.key = new THREE.PointLight(PALETTE.keyLight, 340, 17, 2);
     this.key.position.set(-3.2, 5.4, 5.0);
     this.group.add(this.key);
 
@@ -73,7 +73,7 @@ export class CharacterLight {
     this._boost = damp(this._boost, 0, 8, dt);
     const b = 1 + this._boost + thrust * 0.5;
 
-    this.key.intensity = 250 * b;
+    this.key.intensity = 340 * b;
     this.rim.intensity = 330 * b;
     this.kick.intensity = 120 * (1 + thrust * 1.4);
   }

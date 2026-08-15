@@ -279,6 +279,94 @@ export function createHudModule() {
         g.restore();
       }
 
+      /* ---------------- hostile brackets & offscreen arrows ---------------- */
+      // Every hostile gets a bracket, and anything outside the frame gets an arrow
+      // on the screen edge. Without these, a wave that has not closed yet is
+      // completely invisible to the player — the readout says HOSTILES 04 and the
+      // screen shows nothing, which reads as a broken game rather than as a warning.
+      const hostiles = ctx.ai?.enemies;
+      if (hostiles && ctx.camera) {
+        const locked = combat.lockTarget;
+        for (let i = 0; i < hostiles.length; i++) {
+          const e = hostiles[i];
+          if (!e || e === locked) continue;
+
+          v3.set(e.pos.x, e.pos.y, e.z || 0).project(ctx.camera);
+          const behind = v3.z >= 1;
+          const sx = (v3.x * 0.5 + 0.5) * W;
+          const sy = (-v3.y * 0.5 + 0.5) * H;
+          const onScreen = !behind && sx > 8 && sx < W - 8 && sy > 8 && sy < H - 8;
+
+          if (onScreen) {
+            // Bracket scales with the enemy's actual size so a brute reads heavier.
+            const s = clamp(20 * (e.size?.x ?? 1), 13, 62);
+            brackets(sx - s, sy - s, s * 2, s * 2, s * 0.4, 'rgba(255,61,154,0.5)', 1.1);
+          } else {
+            // Edge arrow, clamped into the margin and pointed along the bearing.
+            let dx = sx - W * 0.5;
+            let dy = sy - H * 0.5;
+            if (behind) { dx = -dx; dy = -dy; }
+            const m = Math.hypot(dx, dy) || 1;
+            const mgn = 46;
+            const kx = (W * 0.5 - mgn) / Math.abs(dx / m || 1e-6);
+            const ky = (H * 0.5 - mgn) / Math.abs(dy / m || 1e-6);
+            const k = Math.min(kx, ky);
+            const ax = W * 0.5 + (dx / m) * k;
+            const ay = H * 0.5 + (dy / m) * k;
+            const ang = Math.atan2(dy, dx);
+
+            g.save();
+            g.translate(ax, ay);
+            g.rotate(ang);
+            g.fillStyle = 'rgba(255,61,154,0.82)';
+            g.beginPath();
+            g.moveTo(11, 0);
+            g.lineTo(-7, 7);
+            g.lineTo(-3, 0);
+            g.lineTo(-7, -7);
+            g.closePath();
+            g.fill();
+            g.restore();
+          }
+        }
+      }
+
+      /* ---------------- radar ---------------- */
+      // A top-down slice of the corridor. The playfield is one axis, so the radar
+      // is a strip rather than a disc — a circular radar would waste most of its
+      // area on space the game does not use.
+      if (hostiles && combat.player) {
+        const rw = 216;
+        const rh = 34;
+        const rx = W * 0.5 - rw / 2;
+        const ry = M;
+        const RANGE = 90; // world units shown either side
+
+        g.fillStyle = 'rgba(4,8,14,0.55)';
+        g.fillRect(rx, ry, rw, rh);
+        brackets(rx, ry, rw, rh, 9, CYAN_DIM, 1);
+        g.fillStyle = 'rgba(90,217,255,0.16)';
+        g.fillRect(rx, ry + rh / 2, rw, 1);
+
+        const px = combat.player.pos.x;
+        for (let i = 0; i < hostiles.length; i++) {
+          const e = hostiles[i];
+          if (!e) continue;
+          const rel = (e.pos.x - px) / RANGE;
+          if (Math.abs(rel) > 1) continue;
+          const bx = rx + rw / 2 + rel * (rw / 2 - 6);
+          // Vertical offset shows altitude, so flyers separate from ground units.
+          const by = ry + rh / 2 - clamp((e.pos.y - combat.player.pos.y) / 24, -1, 1) * (rh / 2 - 6);
+          const big = (e.size?.x ?? 1) > 2;
+          g.fillStyle = big ? DANGER : MAGENTA;
+          g.fillRect(bx - (big ? 3 : 2), by - (big ? 3 : 2), big ? 6 : 4, big ? 6 : 4);
+        }
+        // Player pip
+        g.fillStyle = CYAN;
+        g.fillRect(rx + rw / 2 - 1.5, ry + rh / 2 - 4, 3, 8);
+        label('SCAN', rx + 5, ry - 5, CYAN_DIM, 8);
+      }
+
       /* ---------------- lock-on reticle ---------------- */
       const t = combat.lockTarget;
       if (t && ctx.camera) {
@@ -330,7 +418,10 @@ export function createHudModule() {
         const k = n.t / n.life;
         // Snap in, hold, fade out.
         const alpha = k < 0.12 ? k / 0.12 : k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
-        const y = H * 0.36 - i * 34 - Ease.outCubic(clamp(k * 2, 0, 1)) * 8;
+        // Notices sit well above the combo readout. Both previously landed near
+        // H*0.34 and stacked on top of each other, so a rank and a wave callout
+        // rendered as one illegible pile.
+        const y = H * 0.15 + i * 30 - Ease.outCubic(clamp(k * 2, 0, 1)) * 8;
         const col = n.kind === 'warn' ? DANGER : n.kind === 'rank' ? AMBER : CYAN;
 
         g.save();

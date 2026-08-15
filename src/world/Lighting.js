@@ -22,7 +22,7 @@ export function buildLighting(opts = {}) {
 
   // --- key ----------------------------------------------------------------
   // Angled so the mech's own geometry casts across itself rather than lighting flat.
-  const key = new THREE.DirectionalLight(PALETTE.keyLight, 2.35);
+  const key = new THREE.DirectionalLight(PALETTE.keyLight, 3.2);
   key.position.set(-26, 44, 26);
   key.target.position.set(0, 4, 0);
   key.castShadow = true;
@@ -42,7 +42,7 @@ export function buildLighting(opts = {}) {
   lights.key = key;
 
   // --- fill ---------------------------------------------------------------
-  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 1.15);
+  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 1.85);
   group.add(hemi);
   lights.hemi = hemi;
 
@@ -69,14 +69,19 @@ export function buildLighting(opts = {}) {
   lights.rim2 = rim2;
 
   // --- neon bounce --------------------------------------------------------
-  // Stand-ins for signage spill. Point lights, no shadows, generous distance falloff.
+  // Stand-ins for signage spill — ACCENTS, not floodlights.
+  //
+  // At their previous intensity a single neon tinted the whole carriageway, so
+  // frames swung uniformly magenta or uniformly cyan and the cold industrial base
+  // the palette is built on disappeared entirely. The cold key and hemisphere now
+  // carry the scene and neon colours the edges of it.
   // Intensities are in physical units and fall off as 1/r², so lighting a street
   // from 15-20 units up takes values in the thousands, not the tens.
   const neonSpecs = [
-    { c: PALETTE.magenta, x: -46, y: 11, z: -12, i: 950, d: 58 },
-    { c: PALETTE.cyan,    x:  12, y:  9, z: -16, i: 1150, d: 62 },
-    { c: PALETTE.amber,   x:  58, y: 13, z: -10, i: 820, d: 54 },
-    { c: PALETTE.cyan,    x: -96, y: 10, z: -14, i: 700, d: 48 },
+    { c: PALETTE.magenta, x: -46, y: 11, z: -12, i: 430, d: 58 },
+    { c: PALETTE.cyan,    x:  12, y:  9, z: -16, i: 520, d: 62 },
+    { c: PALETTE.amber,   x:  58, y: 13, z: -10, i: 380, d: 54 },
+    { c: PALETTE.cyan,    x: -96, y: 10, z: -14, i: 320, d: 48 },
   ];
   lights.neon = [];
   for (const s of neonSpecs) {

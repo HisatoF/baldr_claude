@@ -211,8 +211,12 @@ export function buildGround(opts = {}) {
   const decalGeo = buildSurfaceGeometry(GROUND_MIN_X, GROUND_MAX_X, -ROAD_HALF, ROAD_HALF, 300, 6, 0.012);
   const decalMat = new THREE.MeshStandardMaterial({
     map: decalTex,
+    // Road paint is set dressing and must lose the contrast contest to the mech.
+    // At full opacity the yellow crosswalk was the most saturated, highest-value
+    // object in frame and the eye went to it instead of to the player.
+    color: 0x8e9099,
     transparent: true,
-    opacity: 0.92,
+    opacity: 0.62,
     roughness: 0.62,
     metalness: 0.0,
     envMapIntensity: 0.4,
@@ -274,16 +278,24 @@ export function buildGround(opts = {}) {
   puddleNormal.repeat.set(2, 2);
   const puddleGeo = new THREE.PlaneGeometry(1, 1, 1, 1);
   puddleGeo.rotateX(-Math.PI / 2);
+  // Wet asphalt is a DIELECTRIC, not a metal.
+  //
+  // At metalness 0.86 and roughness 0.045 these were mirrors, and a mirror in a
+  // night scene with a dark environment map reflects almost nothing — every puddle
+  // rendered as a hard-edged pure black hole punched through the road. Dropping
+  // metalness restores the diffuse term underneath, so the puddle keeps the road's
+  // value and gains a wet specular sheen from the neon on top of it, which is what
+  // wet ground actually does.
   const puddleMat = new THREE.MeshStandardMaterial({
-    color: 0x0a1119,
-    roughness: 0.045,
-    metalness: 0.86,
+    color: 0x1b2430,
+    roughness: 0.16,
+    metalness: 0.04,
     normalMap: puddleNormal,
-    normalScale: new THREE.Vector2(0.22, 0.22),
+    normalScale: new THREE.Vector2(0.35, 0.35),
     alphaMap: puddleMask,
     transparent: true,
-    opacity: 0.95,
-    envMapIntensity: 2.1,
+    opacity: 0.72,
+    envMapIntensity: 1.4,
     depthWrite: false,
     polygonOffset: true,
     polygonOffsetFactor: -4,
