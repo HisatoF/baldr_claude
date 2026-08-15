@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Silhouette contact sheet</title>
+<style>
+  html, body { margin: 0; background: #d8dde4; }
+  #sheet { display: block; }
+</style>
+<canvas id="sheet"></canvas>
+<script type="module">
+  /**
+   * Silhouette contact sheet.
+   *
+   * The rubric's first axis is that every unit must be identifiable as a black shape
+   * at 64px. This renders each one flat-black against a light background at exactly
+   * that size, because judging silhouette from a lit, textured, colour-graded combat
+   * frame is judging something else entirely — lighting and emissives do most of the
+   * work there and hide a shape that does not actually read.
+   *
+   * Each unit is drawn twice: large enough to inspect, and at a true 64px cell.
+   */
+  import * as THREE from 'three';
+  import { createMech } from '/src/combat/MechModel.js';
+  import { ARCHETYPES } from '/src/ai/EnemyModels.js';
+
+  const CELL = 260;
+  const SMALL = 64;
+  const UNITS = ['player', 'grunt', 'sniper', 'brute', 'flyer', 'boss'];
+
+  const canvas = document.getElementById('sheet');
+  canvas.width = CELL * UNITS.length;
+  canvas.height = CELL + SMALL + 34;
+  const ctx2d = canvas.getContext('2d');
+  ctx2d.fillStyle = '#d8dde4';
+  ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(CELL, CELL, false);
+  renderer.setClearColor(0x000000, 0);
+
+  // Flat black, unlit: a silhouette test must not be rescued by shading.
+  const flat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+  function objectFor(name) {
+    if (name === 'player') {
+      const mech = createMech();
+      mech.contactShadow.visible = false;
+      for (const t of mech.thrusters) t.visible = false;
+      if (mech.sabre) mech.sabre.visible = false;
+      mech.root.traverse((o) => { if (o.isMesh) o.material = flat; });
+      return { obj: mech.root, height: 4.0 };
+    }
+    const spec = ARCHETYPES[name];
+    const geo = spec.build();
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, flat);
+    return { obj: mesh, height: spec.hy * 2 };
+  }
+
+  for (let i = 0; i < UNITS.length; i++) {
+    const name = UNITS[i];
+    const scene = new THREE.Scene();
+    const { obj } = objectFor(name);
+    scene.add(obj);
+
+    // Frame each unit to its own bounding box so relative proportion is preserved
+    // within the cell but nothing is cropped.
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = new THREE.Vector3();
+    const centre = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(centre);
+    const extent = Math.max(size.x, size.y) * 0.62;
+
+    const cam = new THREE.OrthographicCamera(-extent, extent, extent, -extent, 0.1, 400);
+    // Three-quarter view, matching how the game actually presents these units.
+    cam.position.set(centre.x + extent * 1.4, centre.y + extent * 0.5, centre.z + extent * 2.6);
+    cam.lookAt(centre);
+
+    renderer.render(scene, cam);
+
+    ctx2d.drawImage(renderer.domElement, i * CELL, 0, CELL, CELL);
+    ctx2d.drawImage(renderer.domElement, i * CELL + (CELL - SMALL) / 2, CELL + 6, SMALL, SMALL);
+
+    ctx2d.fillStyle = '#1a2230';
+    ctx2d.font = '600 13px ui-monospace, monospace';
+    ctx2d.textAlign = 'center';
+    ctx2d.fillText(name.toUpperCase(), i * CELL + CELL / 2, CELL + SMALL + 26);
+
+    ctx2d.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx2d.strokeRect(i * CELL + (CELL - SMALL) / 2, CELL + 6, SMALL, SMALL);
+  }
+
+  window.__sheetReady = true;
+</script>

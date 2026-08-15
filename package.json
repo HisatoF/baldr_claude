@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "shot": "node tools/capture.mjs",
-    "qa": "node tools/qa.mjs"
+    "qa": "node tools/qa.mjs",
+    "silhouettes": "node tools/capture-silhouettes.mjs"
   },
   "repository": {
     "type": "git",

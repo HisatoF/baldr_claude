@@ -87,21 +87,26 @@ const ARMOR = 0x3c4454;
 const ARMOR_D = 0x232936;
 const FRAME = 0x4d5566;
 const HOT = PALETTE.danger;
+const ARMOR_L = 0x5b6577;
 const EYE = 0xff4a4a;
 
 function buildGrunt() {
   const parts = [];
   const rnd = mulberry(11);
   // Wide, low chassis — reads as a crouching beetle.
-  put(parts, new THREE.BoxGeometry(2.3, 0.95, 1.5), 0, 1.25, 0, ARMOR);
-  put(parts, new THREE.BoxGeometry(1.9, 0.45, 1.25), 0, 1.85, 0.05, ARMOR_D);
+  // Body is a shallow wedge slung between the legs — the negative space under the
+  // chassis is the read, so the outline is an arch rather than a slab.
+  put(parts, new THREE.BoxGeometry(2.5, 0.62, 1.5), 0, 1.42, 0, ARMOR);
+  put(parts, new THREE.BoxGeometry(1.7, 0.40, 1.2), 0, 1.86, 0.05, ARMOR_D, { rz: 0.06 });
   // Cyclops sensor
   put(parts, new THREE.SphereGeometry(0.28, 10, 8), 0, 1.82, 0.72, EYE, { emissive: 3.4 });
   put(parts, new THREE.BoxGeometry(0.9, 0.3, 0.2), 0, 1.82, 0.66, ARMOR_D);
   // Stubby legs, splayed
   for (const s of [-1, 1]) {
-    put(parts, new THREE.BoxGeometry(0.42, 0.9, 0.5), s * 0.85, 0.62, 0, FRAME, { rz: s * 0.22 });
-    put(parts, new THREE.BoxGeometry(0.62, 0.22, 0.8), s * 1.0, 0.14, 0.05, ARMOR_D);
+    // Splayed insect legs: two segments, kicked well outboard of the body.
+    put(parts, new THREE.BoxGeometry(0.30, 1.05, 0.34), s * 1.02, 0.98, 0, FRAME, { rz: s * 0.55 });
+    put(parts, new THREE.BoxGeometry(0.26, 0.85, 0.30), s * 1.42, 0.42, 0, FRAME, { rz: -s * 0.30 });
+    put(parts, new THREE.BoxGeometry(0.70, 0.16, 0.72), s * 1.30, 0.08, 0.04, ARMOR_D);
     // Shoulder cannon stub
     put(parts, new THREE.CylinderGeometry(0.16, 0.2, 0.9, 8), s * 1.0, 1.7, 0.35, FRAME, { rx: Math.PI / 2 });
   }
@@ -138,6 +143,12 @@ function buildBrute() {
   // Enormous shoulders on stubby legs: a wedge balanced on end.
   put(parts, new THREE.BoxGeometry(2.0, 1.9, 1.6), 0, 2.6, 0, ARMOR);
   put(parts, new THREE.BoxGeometry(3.6, 1.0, 1.9), 0, 3.5, 0, ARMOR_D);
+  // Swept horns off the shoulder line. A pure box silhouette was confusable with
+  // the grunt at 64px; the horns give the outline an unmistakable top edge.
+  for (const hs of [-1, 1]) {
+    put(parts, new THREE.BoxGeometry(0.34, 2.1, 0.34), hs * 1.55, 4.7, -0.2, FRAME, { rz: hs * 0.42, rx: -0.22 });
+    put(parts, new THREE.BoxGeometry(0.26, 0.9, 0.26), hs * 2.25, 5.5, -0.42, ARMOR_L ?? FRAME, { rz: hs * 0.62 });
+  }
   for (const s of [-1, 1]) {
     put(parts, new THREE.BoxGeometry(1.0, 1.4, 1.5), s * 1.7, 3.3, 0, ARMOR, { rz: s * 0.16 });
     // Heavy fists
