@@ -174,11 +174,49 @@ function buildFlyer() {
   return mergeGeometries(parts, false);
 }
 
+
+function buildBoss() {
+  const parts = [];
+  const rnd = mulberry(97);
+  // Twice the height of anything else and built around one enormous core, so it
+  // reads as a different class of thing rather than a scaled-up brute.
+  put(parts, new THREE.BoxGeometry(4.2, 3.4, 2.8), 0, 6.4, 0, ARMOR);
+  put(parts, new THREE.BoxGeometry(6.4, 1.5, 3.0), 0, 8.3, 0, ARMOR_D);
+  // Exposed core — the weak point, and the phase indicator.
+  put(parts, new THREE.SphereGeometry(1.05, 14, 12), 0, 6.3, 1.35, HOT, { emissive: 3.2 });
+  put(parts, new THREE.TorusGeometry(1.35, 0.22, 8, 20), 0, 6.3, 1.4, FRAME, { rx: 0 });
+
+  for (const side of [-1, 1]) {
+    // Shoulder batteries
+    put(parts, new THREE.BoxGeometry(1.8, 1.6, 2.4), side * 2.9, 8.4, 0, ARMOR, { rz: side * 0.12 });
+    for (let i = 0; i < 3; i++) {
+      put(parts, new THREE.CylinderGeometry(0.17, 0.21, 2.2, 8),
+        side * 2.9, 8.2 + i * 0.5, 1.2, FRAME, { rx: Math.PI / 2 });
+    }
+    // Arms
+    put(parts, new THREE.BoxGeometry(1.3, 3.2, 1.4), side * 3.1, 5.2, 0.1, FRAME, { rz: side * 0.08 });
+    put(parts, new THREE.BoxGeometry(1.7, 1.5, 1.8), side * 3.3, 3.3, 0.2, ARMOR_D);
+    // Legs — short and splayed under all that mass
+    put(parts, new THREE.BoxGeometry(1.5, 2.6, 1.7), side * 1.3, 2.4, 0, ARMOR, { rz: side * 0.15 });
+    put(parts, new THREE.BoxGeometry(2.0, 0.6, 2.4), side * 1.5, 0.4, 0.1, ARMOR_D);
+    // Vents
+    put(parts, new THREE.BoxGeometry(0.28, 1.2, 0.18), side * 1.5, 6.6, 1.42, PALETTE.amber, { emissive: 2.2 });
+  }
+
+  // Head cluster, sunk low and wide
+  put(parts, new THREE.BoxGeometry(1.5, 0.9, 1.3), 0, 9.4, 0.2, ARMOR_D);
+  put(parts, new THREE.BoxGeometry(1.1, 0.18, 0.14), 0, 9.45, 0.88, EYE, { emissive: 3.6 });
+
+  greeble(parts, rnd, 0, 6.0, 0.6, 5.2, 26, FRAME);
+  return mergeGeometries(parts, false);
+}
+
 export const ARCHETYPES = {
   grunt: { build: buildGrunt, max: 26, hp: 90, poise: 60, hx: 1.15, hy: 1.0, mass: 4, speed: 11 },
   sniper: { build: buildSniper, max: 10, hp: 70, poise: 40, hx: 0.7, hy: 2.2, mass: 3.4, speed: 6 },
   brute: { build: buildBrute, max: 8, hp: 420, poise: 220, hx: 1.7, hy: 2.4, mass: 14, speed: 7 },
   flyer: { build: buildFlyer, max: 18, hp: 60, poise: 30, hx: 0.85, hy: 0.6, mass: 2.2, speed: 15 },
+  boss:  { build: buildBoss,  max: 2,  hp: 4200, poise: 900, hx: 3.2, hy: 5.0, mass: 60, speed: 5 },
 };
 
 /**

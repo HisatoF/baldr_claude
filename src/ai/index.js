@@ -67,6 +67,12 @@ export function createAiModule() {
       e.poiseMax = spec.poise;
       e.poise = spec.poise;
       if (archetype === 'flyer') e.flags |= Flags.NO_GRAVITY;
+      if (archetype === 'boss') {
+        // BOSS entities are immune to launch and juggling; poise break is their
+        // stagger instead, so the player earns openings by breaking guard rather
+        // than by looping a launcher.
+        e.flags |= Flags.BOSS;
+      }
 
       const u = e.userData;
       u.state = STATE.APPROACH;
@@ -81,6 +87,8 @@ export function createAiModule() {
       u.flash = 0;
       u.lean = 0;
       u.slot = -1;
+      u.phase = 1;
+      u.salvo = 0;
 
       enemies.push(e);
       ctxRef.bus.emit('entity:spawned', { entity: e });
@@ -102,6 +110,19 @@ export function createAiModule() {
       return;
     }
     e.flags &= ~Flags.STAGGERED;
+
+    if (e.archetype === 'boss') {
+      const frac = e.hp / e.hpMax;
+      const want = frac < 0.33 ? 3 : frac < 0.66 ? 2 : 1;
+      if (want !== u.phase) {
+        u.phase = want;
+        u.attackCd = 1.2;
+        ctx.bus.emit('boss:phase', { phase: want });
+        ctx.bus.emit('camera:shake', { intensity: 0.9, duration: 0.5, freq: 18 });
+        ctx.vfx?.burst?.('explosion', e.pos.x, e.pos.y, { radius: 4, amount: 1.2 });
+        ctx.hud?.notify?.(`PHASE ${want}`, 'warn');
+      }
+    }
 
     // Poise regenerates slowly, so chip damage alone will not keep an enemy locked.
     if (e.poise < e.poiseMax) e.poise = Math.min(e.poiseMax, e.poise + e.poiseMax * 0.11 * dt);
@@ -191,6 +212,33 @@ export function createAiModule() {
     const ox = e.pos.x + nx * (e.size.x + 0.4);
     const oy = e.pos.y + ny * 0.5 + 0.4;
 
+    if (e.archetype === 'boss') {
+      // A fan of shots across the player's position. Wide enough to demand a dash
+      // rather than a step, and telegraphed by the long windup.
+      const shots = 5 + u.phase * 2;
+      const spread = 0.55;
+      for (let i = 0; i < shots; i++) {
+        const a = Math.atan2(ny, nx) + (i - (shots - 1) / 2) * (spread / shots);
+        const sp = 58 + u.phase * 12;
+        const q = ctx.physics.spawn({
+          kind: 'projectile', archetype: 'bossShot',
+          x: ox, y: e.pos.y + 2.4,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+          hx: 0.42, hy: 0.42, team: Team.ENEMY, mass: 0.6, gravityScale: 0, hp: 1,
+        });
+        if (q) {
+          const qu = q.userData;
+          qu.weaponId = 'bossShot'; qu.ownerId = e.id; qu.damage = 26;
+          qu.stagger = 0; qu.launch = 0; qu.hitstop = 0.02; qu.shake = 0.16;
+          qu.life = 3.0; qu.homingDelay = Infinity;
+        }
+      }
+      ctx.bus.emit('camera:shake', { intensity: 0.5, duration: 0.24, freq: 22 });
+      ctx.vfx?.burst?.('muzzle', ox, e.pos.y + 2.4, { dirX: nx, dirY: ny });
+      ctx.audio?.play?.('railgun', { gain: 0.9, x: e.pos.x });
+      return;
+    }
+
     if (e.archetype === 'brute') {
       // Melee shove — only lands if the player is actually close.
       if (m < e.size.x + 4.2) {
@@ -259,8 +307,21 @@ export function createAiModule() {
     waveActive = true;
     waveStartTime = ctx.time.elapsed;
 
-    const n = Math.min(14, 3 + Math.floor(waveIndex * 1.4));
     const px = ctx.combat?.player?.pos?.x ?? 0;
+
+    // Every fifth wave is a boss, with a thin screen of escorts.
+    if (waveIndex % 5 === 0) {
+      const side = rng.bool() ? 1 : -1;
+      api.spawnEnemy('boss', clamp(px + side * 34, -100, 100), 8);
+      for (let i = 0; i < 3; i++) {
+        api.spawnEnemy('grunt', clamp(px + side * rng.range(24, 48), -112, 112), 6);
+      }
+      ctx.bus.emit('wave:started', { index: waveIndex, count: 4 });
+      ctx.hud?.notify?.('WARNING — HEAVY UNIT', 'warn');
+      return;
+    }
+
+    const n = Math.min(14, 3 + Math.floor(waveIndex * 1.4));
 
     for (let i = 0; i < n; i++) {
       // Spawn off both sides, outside the camera, so they walk into frame.
