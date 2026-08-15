@@ -243,3 +243,95 @@ particles — **zero allocation in the steady-state loop**. No `new THREE.Vector
 Every subsystem is reviewed by an adversarial critic agent against `docs/QUALITY_RUBRIC.md`.
 "It works" is not the bar. The bar is: *a frame taken at random during play is
 indistinguishable in craft from a shipped commercial action game.*
+
+## 11. Module public APIs
+
+These signatures are contractual. A module must expose exactly these on `ctx.<name>`;
+other modules may rely on them existing. Extra methods are fine, but nothing here may
+be renamed or have its parameters reordered.
+
+### `ctx.physics`
+
+```js
+spawn(desc) -> entity      // desc: partial entity; physics fills id/prev/defaults
+despawn(entity)            // marks DEAD; actual removal happens end of step
+query(x, y, hx, hy, team, out) -> count   // AABB broadphase into a preallocated `out` array
+raycast(x0, y0, dx, dy, maxDist, team) -> {entity, t, point} | null
+entities                   // live array; DO NOT mutate. Skip entries with Flags.DEAD.
+byId(id) -> entity | undefined
+applyImpulse(entity, ix, iy)
+groundHeightAt(x) -> number   // terrain sampling, for AI and landing FX
+```
+
+### `ctx.combat`
+
+```js
+player                     // the player entity
+loadout                    // { ground:[w1..w4], air:[w1..w4] } weapon ids
+combo                      // { count, damage, timeLeft, rank }
+weapons                    // Map<id, WeaponDef>
+dealDamage(attacker, target, amount, opts) -> bool
+lockTarget                 // current locked entity or null
+```
+
+### `ctx.ai`
+
+```js
+enemies                    // live enemy array (subset of physics.entities)
+spawnEnemy(archetype, x, y) -> entity
+waveIndex
+director                   // { pressure, nextWaveIn }
+```
+
+### `ctx.vfx`
+
+```js
+burst(kind, x, y, opts)    // 'spark'|'debris'|'smoke'|'muzzle'|'impact'|'explosion'
+beam(x0, y0, x1, y1, opts) // instantaneous beam with lifetime
+trail(entity, opts) -> handle   // persistent trail bound to an entity
+stopTrail(handle)
+damageNumber(x, y, amount, kind)
+```
+
+### `ctx.world`
+
+```js
+groundHeightAt(x) -> number
+bounds                     // { minX, maxX, minY, maxY }
+ambientColor               // THREE.Color, so vfx/render can match the palette
+addProp(object3d, layer)   // layer: 'fore' | 'mid' | 'back'
+```
+
+### `ctx.hud`
+
+```js
+setVisible(bool)
+notify(text, kind)         // transient centre-screen callout
+```
+
+### `ctx.audio`
+
+```js
+play(id, opts)             // opts: { gain, rate, pan, x }
+setMusicIntensity(v)       // 0..1, drives the adaptive layer mix
+unlock()                   // resume the AudioContext after a user gesture
+```
+
+### `ctx.render`
+
+```js
+shake(intensity, duration, freq)
+scene, camera
+quality                    // 'low' | 'medium' | 'high'
+setCameraTarget(entity)    // who the camera rig follows
+```
+
+## 12. Working loop for subsystem agents
+
+1. Read this file and `docs/QUALITY_RUBRIC.md` in full before writing code.
+2. Implement inside your own directory only.
+3. Run `node tools/capture.mjs --preset combat --label <yourmodule>` and **look at the
+   PNG with the Read tool**. Reading your own output is mandatory, not optional.
+4. Iterate until the frame satisfies the rubric, then hand off.
+
+The capture harness runs on software WebGL — see the FPS warning in the rubric.
