@@ -92,7 +92,18 @@ export function createRenderModule(canvas) {
       env = makeEnvironment(renderer);
       scene.environment = env.texture;
 
-      rig = new CameraRig(camera);
+      // Framing is set by how much of the frame the mech should own. The mech is
+      // 4 units tall; at fov 46 a camera distance d shows 2*d*tan(23°) world units
+      // of height, so d=24 puts it at roughly a fifth of screen height — a hero
+      // presence, with room left for the enemies it is fighting.
+      rig = new CameraRig(camera, {
+        fov: 46,
+        dist: 24,
+        height: 4.6,
+        focusYOffset: 2.3,
+        maxLeadX: 9,
+        maxLeadY: 4.5,
+      });
       post = new Post(renderer, scene, camera, quality);
 
       // Route the contract shake event through the rig so any module can request one.

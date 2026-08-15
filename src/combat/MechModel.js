@@ -994,10 +994,16 @@ export function createMech(opts = {}) {
     map: surface.map,
     normalMap: surface.normalMap,
     roughnessMap: surface.roughnessMap,
-    roughness: 1.0,
-    metalness: 1.0,
+    roughness: 0.82,
+    // NOT fully metallic, deliberately. A metalness of 1 leaves the surface with no
+    // diffuse response at all, so it can only be lit by what the environment map
+    // happens to contain — and in a night city that is almost nothing, which renders
+    // the mech as a black cutout no matter how many lights are aimed at it. Real
+    // mech armour is painted plate (a dielectric) over a metal frame, so a mixed
+    // value is both more correct and far more readable.
+    metalness: 0.5,
     emissive: 0x000000,
-    envMapIntensity: 1.15,
+    envMapIntensity: 1.55,
   });
   material.normalScale.set(0.85, 0.85);
   attachVertexResponse(material, emiPulse);

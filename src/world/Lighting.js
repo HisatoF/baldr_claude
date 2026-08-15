@@ -70,11 +70,13 @@ export function buildLighting(opts = {}) {
 
   // --- neon bounce --------------------------------------------------------
   // Stand-ins for signage spill. Point lights, no shadows, generous distance falloff.
+  // Intensities are in physical units and fall off as 1/r², so lighting a street
+  // from 15-20 units up takes values in the thousands, not the tens.
   const neonSpecs = [
-    { c: PALETTE.magenta, x: -46, y: 11, z: -12, i: 26, d: 58 },
-    { c: PALETTE.cyan,    x:  12, y:  9, z: -16, i: 30, d: 62 },
-    { c: PALETTE.amber,   x:  58, y: 13, z: -10, i: 22, d: 54 },
-    { c: PALETTE.cyan,    x: -96, y: 10, z: -14, i: 18, d: 48 },
+    { c: PALETTE.magenta, x: -46, y: 11, z: -12, i: 950, d: 58 },
+    { c: PALETTE.cyan,    x:  12, y:  9, z: -16, i: 1150, d: 62 },
+    { c: PALETTE.amber,   x:  58, y: 13, z: -10, i: 820, d: 54 },
+    { c: PALETTE.cyan,    x: -96, y: 10, z: -14, i: 700, d: 48 },
   ];
   lights.neon = [];
   for (const s of neonSpecs) {
