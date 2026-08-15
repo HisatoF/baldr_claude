@@ -37,7 +37,7 @@ export class Engine {
       bus: new Bus(),
       input: new Input(opts.inputTarget || window),
       rng: new Rng(opts.seed ?? 0x5eed1234),
-      time: { elapsed: 0, dt: 0, frame: 0, scale: 1, alpha: 0 },
+      time: { elapsed: 0, dt: 0, frame: 0, scale: 1, alpha: 0, present: true },
       debug: { enabled: false },
     };
 
@@ -204,14 +204,34 @@ export class Engine {
    * wall-clock time entirely. This is what the automated capture harness drives, so
    * that a screenshot taken at step N is byte-reproducible across runs.
    */
-  advanceDeterministic(n) {
-    for (let i = 0; i < n; i++) this.fixedStep();
-    this.ctx.time.alpha = 0;
-    this.ctx.time.dt = SIM_DT;
-    this.ctx.time.frame++;
-    for (const m of this.modules) {
-      if (m.frame) m.frame(this.ctx, SIM_DT, 0);
+  advanceDeterministic(n, stepsPerFrame = 2) {
+    // Frames are interleaved with simulation steps rather than run once at the end.
+    //
+    // Running N steps and then a single frame starves every system that integrates
+    // on frame time — camera follow, procedural animation, particles, motion-blur
+    // velocity. The result was captures where the player had crossed the arena while
+    // the camera had barely moved, which made every screenshot a picture of a bug
+    // that does not exist during real play.
+    //
+    // Intermediate frames update state but do not present: `ctx.time.present` tells
+    // the render module to skip the actual composite, so catching up costs module
+    // logic rather than a full post chain per step.
+    let remaining = n;
+    while (remaining > 0) {
+      const k = Math.min(stepsPerFrame, remaining);
+      for (let i = 0; i < k; i++) this.fixedStep();
+      remaining -= k;
+
+      const dt = k * SIM_DT;
+      this.ctx.time.alpha = 0;
+      this.ctx.time.dt = dt;
+      this.ctx.time.frame++;
+      this.ctx.time.present = remaining <= 0;
+      for (const m of this.modules) {
+        if (m.frame) m.frame(this.ctx, dt, 0);
+      }
     }
+    this.ctx.time.present = true;
   }
 
   dispose() {

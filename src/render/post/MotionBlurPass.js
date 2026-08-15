@@ -66,7 +66,11 @@ const MotionBlurShader = {
       // The centre of the frame is where the player is; keep it readable.
       float edge = smoothstep(0.06, 0.62, r);
 
-      float radialAmt = (uRadial + uDash * 1.15) * edge * uAmount;
+      // uDash is a 0..1 intensity, so its coefficient IS the streak length in uv at
+      // the frame edge. At 1.15 a routine dash produced radialAmt ~0.2, smearing
+      // roughly 160px and destroying the entire image; the dash channel drowned out
+      // every other term. Keep it in the same order of magnitude as uRadial.
+      float radialAmt = (uRadial + uDash * 0.09) * edge * uAmount;
       vec2  dirAmt    = uVelocity * (0.35 + 0.65 * edge) * uAmount;
 
       float mag = radialAmt * r + length(dirAmt);

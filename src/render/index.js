@@ -127,6 +127,10 @@ export function createRenderModule(canvas) {
       post.setDashIntensity(rig.dashIntensity ?? 0);
       post.update(dt, ctx.time.elapsed);
 
+      // Catch-up frames during deterministic capture update state without paying
+      // for a full composite; only the final frame of a chunk presents.
+      if (ctx.time.present === false) return;
+
       renderer.info.reset();
       post.render();
     },

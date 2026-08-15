@@ -12,15 +12,16 @@ import { Flags } from '../core/Flags.js';
  * and collision, and publishes the §11 `ctx.physics` API.
  *
  * Step order matters and is deliberate:
- *   1. integrate      — advance positions from velocities
- *   2. resolve        — terrain and playfield bounds
- *   3. rebuild        — refresh the broadphase against final positions
- *   4. sweep          — continuous projectile tests (needs the fresh grid)
- *   5. separate       — soft push-apart so bodies do not stack in one column
- *   6. compact        — remove DEAD entities, once, at the very end
+ *   1. compact        — retire entities that died on the PREVIOUS step
+ *   2. integrate      — advance positions from velocities
+ *   3. resolve        — terrain contact and playfield bounds
+ *   4. rebuild        — refresh the broadphase against final positions
+ *   5. sweep          — continuous projectile tests (needs the fresh grid)
+ *   6. separate       — soft push-apart so bodies do not stack in one column
  *
- * Compaction is last and happens exactly once per step so that no system can ever
- * observe a half-removed entity mid-frame.
+ * Compaction leads rather than trails, so the entity array — and therefore the
+ * broadphase indices built from it — stays stable for every module that runs after
+ * physics this step.
  */
 export function createPhysicsModule() {
   const store = new EntityStore(640);
@@ -99,6 +100,18 @@ export function createPhysicsModule() {
     },
 
     fixed(ctx, dt) {
+      // Compaction happens FIRST, not last.
+      //
+      // The broadphase stores indices into the entity array, so anything that
+      // reorders that array invalidates the grid. Compacting at the end of the step
+      // left every later module (combat's lock-on, AI's queries) reading a grid whose
+      // indices no longer resolved — an undefined entity, one step later.
+      //
+      // Removing last step's dead first means the array is stable for the whole of
+      // this step. Entities that die *during* this step keep their slot until the
+      // next one, flagged DEAD, and every consumer already skips DEAD.
+      store.compact();
+
       const entities = store.entities;
 
       integrateAll(entities, dt);
@@ -126,8 +139,6 @@ export function createPhysicsModule() {
       collision.rebuild(entities);
       collision.sweepAll(entities, api.despawn);
       collision.separateAll(entities, dt);
-
-      store.compact();
     },
 
     dispose() {

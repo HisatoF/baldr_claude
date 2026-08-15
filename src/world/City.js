@@ -235,7 +235,7 @@ export function buildCity(opts = {}) {
     metalness: 0.05,
     emissive: 0xffffff,
     emissiveMap: midWin,
-    emissiveIntensity: 0.55,
+    emissiveIntensity: 0.34,
   });
   disposables.push(midMat);
 
@@ -302,18 +302,18 @@ export function buildCity(opts = {}) {
   const foreMat = new THREE.MeshBasicMaterial({ color: 0x01020a, fog: false });
   disposables.push(foreMat);
   const FORE_N = 8;
-  const FORE_Z = 9;
+  const FORE_Z = 5;
   const foreInst = new THREE.InstancedMesh(box, foreMat, FORE_N);
   foreInst.frustumCulled = false;
   for (let i = 0; i < FORE_N; i++) {
-    const w = 2.2 + rnd() * 2.6;
-    const h = 22 + rnd() * 22;
-    const d = 2.2 + rnd() * 2.6;
+    const w = 1.5 + rnd() * 1.6;
+    const h = 20 + rnd() * 18;
+    const d = 1.5 + rnd() * 1.6;
     // ~48 units apart, so at most one is ever inside the frame at a time.
     let x = -190 + (380 / FORE_N) * i + (rnd() - 0.5) * 16;
     // Keep a clear channel around the player's start so the opening frame is not
     // occluded by a near-black pillar sitting dead centre.
-    if (Math.abs(x) < 30) x += x < 0 ? -30 : 30;
+    if (Math.abs(x) < 26) x += x < 0 ? -26 : 26;
     pos.set(x, h * 0.5 - 9, FORE_Z + (rnd() - 0.5) * 5);
     scl.set(w, h, d);
     q.identity();

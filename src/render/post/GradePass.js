@@ -112,7 +112,7 @@ const GradeShader = {
 
       // Impact flash lives in HDR so it blooms through the tone curve naturally
       // rather than pasting a flat white rectangle over the frame.
-      hdr += uFlashTint * uImpactFlash * (1.6 + 2.2 * uImpactFlash);
+      hdr += uFlashTint * uImpactFlash * (0.9 + 0.8 * uImpactFlash);
 
       vec3 col = acesFilmic(hdr);
       col = linearToSrgb(col);

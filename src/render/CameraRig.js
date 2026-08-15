@@ -257,11 +257,19 @@ export class CameraRig {
 
     // ---- 8. screen-space camera velocity for the motion-blur pass ----------
     // Converted to uv units so the shader does not need to know world scale.
-    const dxWorld = cx - this.prevCamX;
-    const dyWorld = cy - this.prevCamY;
-    const shutter = 0.55;
-    this.velUvX = clamp((dxWorld / (this.viewHalfW * 2)) * shutter, -0.09, 0.09);
-    this.velUvY = clamp((-dyWorld / (this.viewHalfH * 2)) * shutter, -0.09, 0.09);
+    // Convert to a velocity, then multiply by a fixed shutter time.
+    //
+    // Using the raw per-frame displacement made the blur a function of FRAMERATE:
+    // at 10fps the camera travels ten times as far between frames as at 100fps, so
+    // the whole image smeared into a wash exactly when the machine could least
+    // afford to look bad. A real shutter is a duration, so express it as one and the
+    // streak length becomes identical at any framerate.
+    const SHUTTER_SECONDS = 1 / 110;
+    const invDt = dt > 1e-5 ? 1 / dt : 0;
+    const dxWorld = (cx - this.prevCamX) * invDt * SHUTTER_SECONDS;
+    const dyWorld = (cy - this.prevCamY) * invDt * SHUTTER_SECONDS;
+    this.velUvX = clamp(dxWorld / (this.viewHalfW * 2), -0.05, 0.05);
+    this.velUvY = clamp(-dyWorld / (this.viewHalfH * 2), -0.05, 0.05);
     this.prevCamX = cx;
     this.prevCamY = cy;
 

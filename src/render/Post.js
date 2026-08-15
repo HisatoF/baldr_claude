@@ -32,13 +32,13 @@ import { clamp01, damp } from '../core/MathUtil.js';
 const QUALITY = {
   high: {
     bloomMips: 6,
-    bloomStrength: 0.92,
+    bloomStrength: 0.52,
     bloomRadius: 1.15,
-    bloomStretch: 1.42,
-    bloomThreshold: 0.85,
+    bloomStretch: 1.15,
+    bloomThreshold: 1.35,
     motionBlur: true,
     motionTaps: 12,
-    motionAmount: 1.0,
+    motionAmount: 0.20,
     chroma: true,
     chromaSpectral: true,
     chromaAmount: 0.0019,
@@ -50,13 +50,13 @@ const QUALITY = {
   },
   medium: {
     bloomMips: 5,
-    bloomStrength: 0.88,
+    bloomStrength: 0.50,
     bloomRadius: 1.05,
     bloomStretch: 1.35,
-    bloomThreshold: 0.9,
+    bloomThreshold: 1.35,
     motionBlur: true,
     motionTaps: 8,
-    motionAmount: 0.85,
+    motionAmount: 0.18,
     chroma: true,
     chromaSpectral: false,
     chromaAmount: 0.0015,
@@ -107,9 +107,9 @@ export class Post {
     this.renderPass = new RenderPass(scene, camera);
     this.bloom = new BloomPass({
       mips: 6,
-      threshold: 0.85,
+      threshold: 1.05,
       knee: 0.55,
-      strength: 0.92,
+      strength: 0.72,
       radius: 1.15,
       stretch: 1.42,
       tint: PALETTE.bloomTint,
@@ -207,8 +207,15 @@ export class Post {
    */
   impactFlash(v) {
     const a = Math.max(0, v);
-    this._flash = Math.min(this._flash + a * 0.35, 1.2);
-    this._impact = Math.min(this._impact + a, 1.5);
+    // Take the strongest recent hit rather than summing hits.
+    //
+    // Accumulating looked fine on a single impact and blew the frame to solid white
+    // the moment a combo landed several hits inside the decay window — the value
+    // pinned at its ceiling and never came back down. A flash should track the
+    // biggest thing that just happened, not how many things happened, which is the
+    // same reason hitstop takes a max in the engine.
+    this._flash = Math.max(this._flash, Math.min(a * 0.55, 0.5));
+    this._impact = Math.max(this._impact, Math.min(a, 0.30));
   }
 
   /** Screen-space camera velocity, in uv units per frame. Called by the rig. */
@@ -240,18 +247,27 @@ export class Post {
     if (!this._dashExtHeld) this._dashExt = damp(this._dashExt, 0, 7, dt);
     this._dashExtHeld = false;
 
-    const target = Math.max(this._dashExt, this._dashRig);
+    // Cap how far the rig's own speed can drive the streak. Sustained combat kept
+    // this near 1 permanently, smearing the entire frame at all times.
+    const target = Math.min(0.55, Math.max(this._dashExt, this._dashRig));
     // Attack fast, release slow — the streak should snap on and trail off.
     this._dash = damp(this._dash, target, target > this._dash ? 26 : 7, dt);
 
-    this._flash = damp(this._flash, 0, 13, dt);
-    this._impact = damp(this._impact, 0, 9, dt);
+    this._flash = damp(this._flash, 0, 18, dt);
+    this._impact = damp(this._impact, 0, 16, dt);
 
-    this.motionBlur.uniforms.uDash.value = this._dash;
     // Baseline radial blur is kept very low. A constant lens-streak reads as a
     // cheap trick and, at any real strength, dissolves fine background detail
     // (skyline windows, panel lines) into mush on every single frame.
-    this.motionBlur.uniforms.uRadial.value = 0.0012 + this._impact * 0.022 + this._dash * 0.012;
+    // Radial streak is GATED, not continuous.
+    //
+    // A baseline radial term smears every pixel on every frame, including while
+    // standing still, and at any strength that reads during a dash it destroys the
+    // rest of the image the other 95% of the time. So it stays at exactly zero until
+    // the dash channel crosses a threshold, then ramps hard. Blur should be an event.
+    const dashGate = this._dash > 0.35 ? (this._dash - 0.35) / 0.65 : 0;
+    this.motionBlur.uniforms.uRadial.value = dashGate * dashGate * 0.030 + this._impact * 0.004;
+    this.motionBlur.uniforms.uDash.value = dashGate;
     this.chroma.uniforms.uImpact.value = this._impact;
     this.grade.uniforms.uImpactFlash.value = this._flash;
     this.grade.uniforms.uTime.value = elapsed;

@@ -43,9 +43,16 @@ export class CharacterLight {
     this._boost = 0;
   }
 
-  /** Flash the rig brighter — used on impacts and weapon discharge. */
+  /**
+   * Flash the rig brighter — used on impacts and weapon discharge.
+   *
+   * Takes the max rather than summing. Adding each pulse meant that during a combo,
+   * where hits land faster than the boost decays, the value pinned at its ceiling
+   * and left the rim light running near 900 intensity permanently — which washed the
+   * entire scene white and read as a bug, not as impact.
+   */
   pulse(amount) {
-    this._boost = Math.min(2.2, this._boost + amount);
+    this._boost = Math.max(this._boost, Math.min(amount, 0.85));
   }
 
   /**

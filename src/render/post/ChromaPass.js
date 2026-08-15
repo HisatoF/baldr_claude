@@ -21,7 +21,7 @@ const ChromaShader = {
     tDiffuse: { value: null },
     uAmount: { value: 0.0016 }, // base fringe, in uv units at the corner
     uImpact: { value: 0.0 }, // 0..1, punched up on hits
-    uImpactScale: { value: 0.010 },
+    uImpactScale: { value: 0.0035 },
     uBarrel: { value: 0.35 }, // extra edge falloff shaping
   },
 
