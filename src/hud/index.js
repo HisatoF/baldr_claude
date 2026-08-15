@@ -135,8 +135,17 @@ export function createHudModule() {
       if (canvas) canvas.style.display = v ? '' : 'none';
     },
     notify(text, kind = 'info') {
+      // Deduplicate: the same callout can be emitted from more than one path in a
+      // single step, and a stack reading "WAVE 2 / WAVE 2" reads as a bug.
+      for (let i = 0; i < notices.length; i++) {
+        if (notices[i].text === text) {
+          notices[i].t = 0;
+          return;
+        }
+      }
       notices.push({ text, kind, t: 0, life: kind === 'wave' ? 2.4 : 1.6 });
-      if (notices.length > 4) notices.shift();
+      // Three at once is already a crowded corner; older ones give way.
+      while (notices.length > 3) notices.shift();
     },
   };
 
@@ -239,7 +248,7 @@ export function createHudModule() {
         const cx = W * 0.5;
         // Kept below the horizon. At 0.19 the counter floated in the sky,
         // detached from the fight it was describing.
-        const cy = H * 0.34;
+        const cy = H * 0.42;
         const scale = 1 + Ease.outBack(comboPunch) * 0.22;
         const col = RANK_COLOR[cc.rank] || CYAN;
 

@@ -32,9 +32,12 @@ export function createAiModule() {
   const euler = new THREE.Euler();
 
   let waveIndex = 0;
-  let waveTimer = 3.0;
+  let waveTimer = 1.6;
   let waveActive = false;
   let waveStartTime = 0;
+  let reinforceTimer = 1.1;
+  // Bounded, so reinforcement thickens a wave without preventing it from ending.
+  let reinforceBudget = 0;
 
   const director = { pressure: 0, nextWaveIn: 3.0 };
 
@@ -310,6 +313,7 @@ export function createAiModule() {
     api.waveIndex = waveIndex;
     waveActive = true;
     waveStartTime = ctx.time.elapsed;
+    reinforceBudget = 3 + Math.min(6, waveIndex);
 
     const px = ctx.combat?.player?.pos?.x ?? 0;
 
@@ -325,7 +329,7 @@ export function createAiModule() {
       return;
     }
 
-    const n = Math.min(14, 3 + Math.floor(waveIndex * 1.4));
+    const n = Math.min(18, 6 + Math.floor(waveIndex * 1.8));
 
     for (let i = 0; i < n; i++) {
       // Spawn off both sides, outside the camera, so they walk into frame.
@@ -342,8 +346,9 @@ export function createAiModule() {
       api.spawnEnemy(type, x, y);
     }
 
+    // The HUD subscribes to wave:started; calling notify() here as well produced
+    // two identical callouts stacked on top of each other.
     ctx.bus.emit('wave:started', { index: waveIndex, count: n });
-    ctx.hud?.notify?.(`WAVE ${waveIndex}`, 'wave');
   }
 
   return {
@@ -375,9 +380,27 @@ export function createAiModule() {
 
       // --- director ---
       director.pressure = clamp(enemies.length / 12, 0, 1);
+
+      // Trickle reinforcements while a wave is thinning out. Without this the arena
+      // empties for seconds at a time, which is both dead air in a game built on
+      // sustained pressure and the reason the "peak load" capture kept sampling a
+      // lull that cost exactly as much as an idle frame.
+      if (waveActive && enemies.length > 0 && enemies.length < 4 && reinforceBudget > 0) {
+        reinforceTimer -= dt;
+        if (reinforceTimer <= 0) {
+          reinforceTimer = 1.1;
+          reinforceBudget--;
+          const px = ctx.combat?.player?.pos?.x ?? 0;
+          const side = rng.bool() ? 1 : -1;
+          const type = rng.float() > 0.7 && waveIndex >= 3 ? 'flyer' : 'grunt';
+          api.spawnEnemy(type, clamp(px + side * rng.range(20, 32), -112, 112), type === 'flyer' ? 12 : 6);
+        }
+      } else {
+        reinforceTimer = 1.1;
+      }
       if (waveActive && enemies.length === 0) {
         waveActive = false;
-        waveTimer = 3.4;
+        waveTimer = 1.5;
         ctx.bus.emit('wave:cleared', {
           index: waveIndex,
           timeTaken: ctx.time.elapsed - waveStartTime,

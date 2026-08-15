@@ -38,8 +38,8 @@ export const PRESETS = {
   // Offset off the round wave boundaries: at exactly 1800 the arena had just been
   // cleared, so the "peak load" shot was byte-identical in cost to the idle shot
   // and proved nothing about readability under pressure.
-  heavy:   { steps: 2040, desc: 'mid-wave, heavy load' },
-  late:    { steps: 3480, desc: '29s in — wave escalation' },
+  heavy:   { steps: 2040, desc: 'mid-wave, heavy load', minHostiles: 5 },
+  late:    { steps: 3480, desc: '29s in — wave escalation', minHostiles: 4 },
 };
 
 function arg(name, def = null) {
@@ -143,6 +143,18 @@ export async function capture(shots, opts = {}) {
         await page.evaluate((k) => window.__game.advance(k), n);
         remaining -= n;
       }
+      // Some shots are only meaningful under load. Stepping to a fixed count kept
+      // landing on the gap between waves, producing a "peak load" frame that was
+      // byte-identical in cost to the idle frame and proved nothing. Advance until
+      // the arena is actually populated, with a hard cap so this cannot hang.
+      if (shot.minHostiles) {
+        for (let guard = 0; guard < 60; guard++) {
+          const n = await page.evaluate(() => window.__game.ctx.ai?.enemies?.length ?? 0);
+          if (n >= shot.minHostiles) break;
+          await page.evaluate(() => window.__game.advance(60));
+        }
+      }
+
       const simWallMs = Date.now() - t0;
 
       // Measure a few real animation frames for an honest FPS reading.
@@ -159,6 +171,7 @@ export async function capture(shots, opts = {}) {
           frameMs: Math.round(s.frameMs * 100) / 100,
           drawCalls: info?.render?.calls ?? -1,
           triangles: info?.render?.triangles ?? -1,
+          hostiles: g.ctx.ai?.enemies?.length ?? -1,
           programs: info?.programs?.length ?? -1,
           geometries: info?.memory?.geometries ?? -1,
           textures: info?.memory?.textures ?? -1,
