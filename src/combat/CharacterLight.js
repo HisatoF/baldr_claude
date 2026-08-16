@@ -44,6 +44,51 @@ export class CharacterLight {
     this.group.add(this.kick);
 
     this._boost = 0;
+
+    // --- threat light -------------------------------------------------------
+    // A shadow-casting spot that rides the nearest hostile and aims at the player.
+    //
+    // Emissive materials are not light sources: the enemy's magenta glow lights
+    // nothing and casts nothing, so a review correctly reported that the mech throws
+    // no shadow despite standing next to the brightest thing on screen. This stands
+    // in for that glow — one spot light, one shadow map, aimed along the axis the
+    // player actually cares about, so the mech's shadow moves when the threat moves.
+    //
+    // It lives outside `group` because it is positioned in world space at the enemy,
+    // not relative to the mech.
+    this.threat = new THREE.SpotLight(PALETTE.magenta, 0, 46, 0.72, 0.55, 1.6);
+    this.threat.castShadow = true;
+    this.threat.shadow.mapSize.set(1024, 1024);
+    this.threat.shadow.camera.near = 1.5;
+    this.threat.shadow.camera.far = 52;
+    this.threat.shadow.bias = -0.0016;
+    this.threat.shadow.normalBias = 0.03;
+    this.threatTarget = new THREE.Object3D();
+    this.root = new THREE.Group();
+    this.root.name = 'combat.threatLight';
+    this.root.add(this.threat, this.threatTarget);
+    this.threat.target = this.threatTarget;
+  }
+
+  /**
+   * Aim the threat light from `source` at `player`. Pass a null source to fade it out.
+   */
+  updateThreat(player, source, dt) {
+    const t = this.threat;
+    if (!source || !player) {
+      t.intensity = damp(t.intensity, 0, 6, dt);
+      return;
+    }
+    // Sit slightly above the hostile so the shadow rakes across the ground rather
+    // than shooting straight out at ankle height.
+    t.position.set(source.pos.x, source.pos.y + (source.size?.y ?? 1) * 0.8 + 1.2, (source.z || 0) + 1.5);
+    this.threatTarget.position.set(player.pos.x, player.pos.y - 0.5, player.z || 0);
+    this.threatTarget.updateMatrixWorld();
+
+    // Only worth paying for when the threat is close enough to matter.
+    const d = Math.hypot(source.pos.x - player.pos.x, source.pos.y - player.pos.y);
+    const want = d < 34 ? 620 * (1 - d / 34) : 0;
+    t.intensity = damp(t.intensity, want, 8, dt);
   }
 
   /**

@@ -331,6 +331,7 @@ export function createCombatModule() {
       if (!attached && ctx.scene) {
         ctx.scene.add(mech.root);
         ctx.scene.add(charLight.group);
+        ctx.scene.add(charLight.root);
         mech.syncEnvironment?.(ctx.scene);
         ctx.render?.setCameraTarget?.(player);
         attached = true;
@@ -342,6 +343,9 @@ export function createCombatModule() {
 
       animator.update(player, controller, dt, alpha);
       charLight.update(player, dt, animator.thrust);
+      // The nearest hostile doubles as a practical light so the mech casts a shadow
+      // driven by the thing threatening it.
+      charLight.updateThreat(player, api.lockTarget, dt);
       ctx.render?.setDashIntensity?.(controller.dashIntensity);
     },
 
