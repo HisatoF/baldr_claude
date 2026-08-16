@@ -406,10 +406,15 @@ export function buildGround(opts = {}) {
     roughnessMap: rebarSrc.orm,
     metalnessMap: rebarSrc.orm,
     roughness: 1.0,
-    metalness: 1.0,
+    // Steel, but not a mirror — at full metalness these went black against the night
+    // sky and then aliased as hard dark specks against the lit road.
+    metalness: 0.62,
     envMapIntensity: 1.0,
   });
-  const rebarGeo = new THREE.CylinderGeometry(0.055, 0.055, 1, 5, 1);
+  // Thickened from 0.055. At distance a 0.11-unit rod covers barely a pixel, and a
+  // sub-pixel high-contrast edge cannot be anti-aliased by a post pass — it just
+  // crawls. Geometry thin enough to alias has to be made thicker or removed.
+  const rebarGeo = new THREE.CylinderGeometry(0.095, 0.095, 1, 6, 1);
   const REBAR_N = 70;
   const rebar = new THREE.InstancedMesh(rebarGeo, rebarMat, REBAR_N);
   rebar.castShadow = true;
