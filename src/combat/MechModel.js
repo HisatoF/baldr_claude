@@ -669,7 +669,27 @@ function buildPauldronL(rng) {
   G.piston(p, [-0.16, -0.06, 0.06], [0, 0, 0.4], 0.34, 0.03);
   G.scatter(p, rng, { c: [0, 0.42, 0.2], axis: 'y', sign: 1, u: 0.4, v: 0.34 }, 3);
   G.scatter(p, rng, { c: [0.03, 0.06, 0.58], axis: 'z', sign: 1, u: 0.5, v: 0.5 }, 4);
-  return p.merge();
+  
+  // Comms mast: the left side's counterpart to the right's blade stack. The two
+  // shoulders now differ in OUTLINE — one raked blade, one vertical spike — rather
+  // than only in the greebles bolted to them.
+  p.add(tube(0.055, 0.085, 1.15, 6), {
+    pos: [0.06, 0.82, 0.34],
+    rot: [0.1, 0, -0.13],
+    color: PAL.FRAME,
+    ...S_FRAME,
+    uvScale: 5,
+    flat: false,
+  });
+  p.add(chamferBox(0.16, 0.16, 0.1, 0.02), {
+    pos: [0.02, 1.36, 0.36],
+    color: PAL.ARMOR_DD,
+    ...S_FRAME,
+    uvScale: 4,
+  });
+  G.sensor(p, [0.02, 1.36, 0.42], 'z', 1, 0.045, PAL.EMI_AMBER);
+
+return p.merge();
 }
 
 function buildPauldronR(rng) {
@@ -690,15 +710,28 @@ function buildPauldronR(rng) {
     ...S_ARMOR_MATTE,
     uvScale: 2.4,
   });
-  // blade fin sweeping up and back — the asymmetry that breaks the outline
-  p.add(wedge(0.72, 0.5, 0.1, 0.03), {
-    pos: [-0.3, 0.62, -0.26],
-    rot: [0.14, 0, 2.5],
+  // Blade fin sweeping up and back — the asymmetry that breaks the outline.
+  //
+  // Sized to be STRUCTURAL, not decorative. At 0.72 units on a four-unit mech this
+  // vanished below about 100px and the two shoulders read as mirrored, which is the
+  // single thing the silhouette axis punishes hardest. It now clears the shoulder
+  // line by enough to change the outline at 64px.
+  p.add(wedge(1.24, 0.82, 0.13, 0.04), {
+    pos: [-0.4, 0.86, -0.3],
+    rot: [0.16, 0, 2.42],
     color: PAL.ARMOR,
     ...S_ARMOR,
     uvScale: 2,
   });
-  G.strip(p, [-0.3, 0.62, -0.32], 'x', 0.5, 0.03, PAL.EMI, 2.6, [0.14, 0, 2.5]);
+  // A second, shorter blade behind it, so the fin reads as a stack rather than a slab.
+  p.add(wedge(0.95, 0.62, 0.1, 0.03), {
+    pos: [-0.2, 0.74, -0.44],
+    rot: [0.2, 0, 2.62],
+    color: PAL.ARMOR_D,
+    ...S_ARMOR_MATTE,
+    uvScale: 2.2,
+  });
+  G.strip(p, [-0.4, 0.86, -0.38], 'x', 0.86, 0.04, PAL.EMI, 2.8, [0.16, 0, 2.42]);
   // gatling drum on the outer face
   p.add(tube(0.19, 0.19, 0.22, 12), {
     pos: [0.02, 0.02, -0.52],

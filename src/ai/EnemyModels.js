@@ -219,7 +219,30 @@ function buildBoss() {
   put(parts, new THREE.BoxGeometry(1.5, 0.9, 1.3), 0, 9.4, 0.2, ARMOR_D);
   put(parts, new THREE.BoxGeometry(1.1, 0.18, 0.14), 0, 9.45, 0.88, EYE, { emissive: 2.2 });
 
-  greeble(parts, rnd, 0, 6.0, 0.6, 5.2, 26, FRAME);
+  // Panel breaks and hardware. Without these the boss is a stack of bare slabs
+  // sitting next to a heavily greebled player mech, and the size difference reads as
+  // "scaled up" rather than as a different class of machine.
+  for (const side of [-1, 1]) {
+    // Armour ribs down the flanks
+    for (let i = 0; i < 4; i++) {
+      put(parts, new THREE.BoxGeometry(0.22, 0.34, 2.5), side * 2.12, 5.5 + i * 0.72, 0, ARMOR_D);
+    }
+    // Intake louvres on the chest block
+    for (let i = 0; i < 3; i++) {
+      put(parts, new THREE.BoxGeometry(1.5, 0.16, 0.18), side * 0.95, 7.5 + i * 0.34, 1.36, FRAME);
+    }
+    // Hip and knee actuators
+    put(parts, new THREE.CylinderGeometry(0.2, 0.2, 1.5, 8), side * 1.95, 2.9, 0.3, FRAME, { rz: side * 0.12 });
+    put(parts, new THREE.BoxGeometry(0.5, 0.5, 0.5), side * 1.3, 3.7, 0.75, ARMOR_D);
+    // Shoulder cap plating
+    put(parts, new THREE.BoxGeometry(1.9, 0.3, 2.5), side * 2.9, 9.15, 0, ARMOR_D, { rz: side * 0.1 });
+  }
+  // Spine cabling and a dorsal fin so the top edge is not a flat line
+  put(parts, new THREE.BoxGeometry(0.5, 2.6, 0.4), 0, 7.6, -1.5, FRAME);
+  put(parts, new THREE.BoxGeometry(0.28, 1.7, 1.5), 0, 9.9, -1.1, ARMOR, { rx: 0.22 });
+
+  greeble(parts, rnd, 0, 6.0, 0.6, 5.2, 34, FRAME);
+  greeble(parts, rnd, 0, 3.2, 0.9, 4.4, 18, ARMOR_D);
   return mergeGeometries(parts, false);
 }
 
