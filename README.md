@@ -108,18 +108,40 @@ measures ~32fps. The `fps` figure it reports is therefore meaningless as a
 performance signal and is deliberately excluded from the QA gate. Judge cost by draw
 calls, triangle count and simulation milliseconds — all hardware-independent.
 
+```bash
+node tools/capture-silhouettes.mjs   # 64px black-shape contact sheet of every unit
+```
+
+The silhouette sheet renders each unit flat-black at 64px, because the rubric's first
+axis cannot be judged from a lit, textured, colour-graded combat frame — lighting and
+emissives do most of the work there and will hide a shape that does not read. It
+immediately found what it was built to find: the player, sniper and flyer read
+distinctly, while grunt, brute and boss were all the same wide dark box, differing in
+proportion rather than in shape language.
+
 ## Notes on what the screenshots caught
 
-Several defects in this project were invisible in code review and obvious the moment
-a frame was actually looked at. Two were worth the trouble on their own:
+Several defects here were invisible in code review and obvious the moment a frame was
+actually looked at. Four were worth the trouble on their own:
 
-- The capture harness ran N simulation steps and then a single frame, starving every
-  system that integrates on frame time. Screenshots showed the player across the
-  arena from a camera that had barely moved — a bug that existed only in the harness,
-  never during play. Frames are now interleaved with simulation.
-- Motion blur used raw per-frame displacement rather than a fixed shutter duration,
-  making streak length a function of framerate. It looked worst exactly on the
-  hardware that could least afford it.
+- **The key light sat where the camera sits.** Shadow maps were on, the mech cast, the
+  ground received, the light cast — and no shadow was ever visible, because a key at
+  `z = +26` with the camera at `z ≈ +24` throws every shadow directly away from the
+  viewer, behind the object casting it. The engine rendered a complete shadow map that
+  was structurally impossible to see.
+- **The contact-shadow blob faced the ground.** `PlaneGeometry` faces `+Z`, so the −90°
+  rotation that lays it flat pointed its face down into the road; only the culled back
+  face was ever toward the camera. Found by forcing it to 4× scale, full opacity and
+  bright red and *still* seeing nothing.
+- **The capture harness ran N simulation steps and then a single frame**, starving every
+  system that integrates on frame time. Screenshots showed the player across the arena
+  from a camera that had barely moved — a bug that existed only in the harness, never
+  during play.
+- **Motion blur used raw per-frame displacement** rather than a fixed shutter duration,
+  making streak length a function of framerate. It looked worst on exactly the hardware
+  that could least afford it.
 
-The lesson generalises: a harness that reports "clean" while producing a black frame
-is worse than no harness. Reviewing the image is not optional.
+Two lessons generalise. A harness that reports "clean" while producing a black frame is
+worse than no harness — reviewing the image is not optional. And when something is
+invisible, test whether it is being *drawn* before assuming it is missing: three of the
+four above were fully implemented and simply could not be seen.
