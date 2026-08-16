@@ -77,7 +77,7 @@ export function createRenderModule(canvas) {
       // while logging a warning on every boot.
       renderer.shadowMap.type = THREE.PCFShadowMap;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
+      renderer.toneMappingExposure = 1.14;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.info.autoReset = false;
 

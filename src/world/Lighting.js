@@ -50,12 +50,15 @@ export function buildLighting(opts = {}) {
   lights.key = key;
 
   // --- fill ---------------------------------------------------------------
-  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 1.85);
+  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 2.25);
   group.add(hemi);
   lights.hemi = hemi;
 
   // A weak cold ambient purely to keep shadowed metal from crushing to pure black.
-  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 0.55);
+  // Lifts the deep shadows with a COOL bounce rather than a neutral grey, so the
+  // darkest quarter of the frame carries information instead of being crushed to
+  // black. Roughly a quarter of every frame was previously below luminance 12.
+  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 1.15);
   group.add(amb);
   lights.ambient = amb;
 

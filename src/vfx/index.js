@@ -49,7 +49,7 @@ export function createVfxModule() {
 
       switch (kind) {
         case 'spark': {
-          const n = budget(10 + 16 * amount);
+          const n = budget(16 + 22 * amount);
           for (let i = 0; i < n; i++) {
             const a = R.range(0, Math.PI * 2);
             const sp = R.range(8, 34) * (0.5 + amount);
@@ -71,7 +71,7 @@ export function createVfxModule() {
 
         case 'impact': {
           // A flat ring of sparks plus a bright flash core.
-          const n = budget(14 + 20 * amount);
+          const n = budget(22 + 30 * amount);
           for (let i = 0; i < n; i++) {
             const a = R.range(0, Math.PI * 2);
             const sp = R.range(12, 46) * (0.6 + amount * 0.7);
@@ -81,24 +81,24 @@ export function createVfxModule() {
               life: R.range(0.1, 0.34),
               size0: R.range(0.12, 0.3), size1: 0.01,
               drag: 4.5, grav: -18, stretch: 2.0,
-              r0: 0.92, g0: 0.90, b0: 0.80, r1: 0.85, g1: 0.34, b1: 0.09,
-              alpha: 0.8,
+              r0: 1.0, g0: 0.96, b0: 0.86, r1: 0.92, g1: 0.36, b1: 0.10,
+              alpha: 0.95,
             });
           }
           sparks.emit({
             x, y, z: 0.2, vx: 0, vy: 0,
-            life: 0.09, size0: 0.75 + amount * 0.5, size1: 0.12,
-            r0: 0.9, g0: 0.86, b0: 0.72, r1: 0.85, g1: 0.42, b1: 0.14, alpha: 0.5,
+            life: 0.10, size0: 1.05 + amount * 0.75, size1: 0.14,
+            r0: 0.95, g0: 0.9, b0: 0.76, r1: 0.9, g1: 0.46, b1: 0.15, alpha: 0.72,
           });
           break;
         }
 
         case 'muzzle': {
-          const n = budget(6);
+          const n = budget(10);
           sparks.emit({
             x, y, z: 0.15, vx: dirX * 3, vy: dirY * 3,
-            life: 0.05, size0: 0.62, size1: 0.16,
-            r0: 0.9, g0: 0.82, b0: 0.62, r1: 0.85, g1: 0.42, b1: 0.15, alpha: 0.55,
+            life: 0.055, size0: 0.88, size1: 0.18,
+            r0: 0.95, g0: 0.88, b0: 0.68, r1: 0.9, g1: 0.46, b1: 0.16, alpha: 0.75,
           });
           for (let i = 0; i < n; i++) {
             const spread = R.range(-0.32, 0.32);
@@ -119,7 +119,7 @@ export function createVfxModule() {
 
         case 'explosion': {
           const rad = opts.radius ?? 2.4;
-          const nf = budget(20 + 26 * amount);
+          const nf = budget(26 + 32 * amount);
           // Fireball core
           for (let i = 0; i < nf; i++) {
             const a = R.range(0, Math.PI * 2);
@@ -136,7 +136,7 @@ export function createVfxModule() {
             });
           }
           // Outward spark shell
-          const ns = budget(16 + 18 * amount);
+          const ns = budget(24 + 26 * amount);
           for (let i = 0; i < ns; i++) {
             const a = R.range(0, Math.PI * 2);
             const sp = R.range(20, 62) * (0.6 + amount);
@@ -197,7 +197,7 @@ export function createVfxModule() {
         }
 
         case 'debris': {
-          const n = budget(6 + 10 * amount);
+          const n = budget(10 + 14 * amount);
           for (let i = 0; i < n; i++) {
             const a = R.range(0, Math.PI * 2);
             const sp = R.range(6, 26) * (0.5 + amount);
