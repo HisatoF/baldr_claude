@@ -268,6 +268,25 @@ export function buildCity(opts = {}) {
   midInst.castShadow = true;
   midInst.receiveShadow = true;
   midInst.frustumCulled = false;
+
+  // Rooftop plant, parapets and cornices.
+  //
+  // A building whose entire silhouette is one extruded box reads as a placeholder
+  // no matter how good its facade texture is — the top edge is a dead straight line
+  // across the sky, which nothing in a real city has. Each tower gets a parapet cap,
+  // a cornice band breaking the wall, and a scatter of roof boxes and masts. Three
+  // instanced meshes for the whole skyline.
+  const capInst = new THREE.InstancedMesh(box, midMat, MID_N * 2);
+  const plantInst = new THREE.InstancedMesh(box, midMat, MID_N * 4);
+  for (const m of [capInst, plantInst]) {
+    m.castShadow = true;
+    m.receiveShadow = true;
+    m.frustumCulled = false;
+    m.count = 0;
+  }
+  let capN = 0;
+  let plantN = 0;
+
   for (let i = 0; i < MID_N; i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const w = 13 + rnd() * 16;
@@ -285,9 +304,46 @@ export function buildCity(opts = {}) {
     q.identity();
     m4.compose(pos, q, scl);
     midInst.setMatrixAt(i, m4);
+
+    // Parapet: slightly wider than the shaft, capping the top edge.
+    pos.set(x, h + 0.6, z);
+    scl.set(w * 1.06, 1.2, d * 1.06);
+    m4.compose(pos, q, scl);
+    capInst.setMatrixAt(capN++, m4);
+
+    // Cornice: a band about two thirds up, breaking the flat wall.
+    const cy2 = h * (0.58 + rnd() * 0.16);
+    pos.set(x, cy2, z);
+    scl.set(w * 1.045, 0.7, d * 1.045);
+    m4.compose(pos, q, scl);
+    capInst.setMatrixAt(capN++, m4);
+
+    // Roof plant: tanks, housings and a mast. Only on taller blocks, where the
+    // roofline is actually visible against the sky.
+    if (h > 22) {
+      const nPlant = 2 + ((rnd() * 3) | 0);
+      for (let k = 0; k < nPlant && plantN < MID_N * 4; k++) {
+        const pw = 1.6 + rnd() * 4.2;
+        const ph = 1.4 + rnd() * 5.5;
+        const pd = 1.6 + rnd() * 3.4;
+        pos.set(
+          x + (rnd() - 0.5) * (w - pw - 1.5),
+          h + 1.2 + ph * 0.5,
+          z + (rnd() - 0.5) * (d - pd - 1.5)
+        );
+        scl.set(pw, ph, pd);
+        m4.compose(pos, q, scl);
+        plantInst.setMatrixAt(plantN++, m4);
+      }
+    }
   }
+
   midInst.instanceMatrix.needsUpdate = true;
-  midGroup.add(midInst);
+  capInst.count = capN;
+  plantInst.count = plantN;
+  capInst.instanceMatrix.needsUpdate = true;
+  plantInst.instanceMatrix.needsUpdate = true;
+  midGroup.add(midInst, capInst, plantInst);
 
   /* ---------------- holographic signage ---------------- */
   const signGeo = new THREE.PlaneGeometry(1, 1);

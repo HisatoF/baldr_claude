@@ -22,7 +22,7 @@ export function buildLighting(opts = {}) {
 
   // --- key ----------------------------------------------------------------
   // Angled so the mech's own geometry casts across itself rather than lighting flat.
-  const key = new THREE.DirectionalLight(PALETTE.keyLight, 3.2);
+  const key = new THREE.DirectionalLight(PALETTE.keyLight, 4.6);
   // BEHIND the play plane, not in front of it.
   //
   // This previously sat at z = +26, which is essentially where the camera is
@@ -44,8 +44,8 @@ export function buildLighting(opts = {}) {
   key.shadow.camera.top = 46;
   key.shadow.camera.bottom = -26;
   key.shadow.bias = -0.0009;
-  key.shadow.normalBias = 0.035;
-  key.shadow.radius = 2.4;
+  key.shadow.normalBias = 0.022;
+  key.shadow.radius = 1.6;
   group.add(key, key.target);
   lights.key = key;
 
@@ -58,7 +58,12 @@ export function buildLighting(opts = {}) {
   // Lifts the deep shadows with a COOL bounce rather than a neutral grey, so the
   // darkest quarter of the frame carries information instead of being crushed to
   // black. Roughly a quarter of every frame was previously below luminance 12.
-  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 1.15);
+  // Deliberately lower than the mid-tone lift alone would want. Ambient fills
+  // shadow and lit surfaces equally, so raising it to rescue crushed blacks also
+  // flattens the very shadow contrast that seats objects on the ground. The lift now
+  // comes mostly from the hemisphere (which is directional top-to-bottom) and the key
+  // carries proportionally more, so shadows stay readable.
+  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 0.72);
   group.add(amb);
   lights.ambient = amb;
 
