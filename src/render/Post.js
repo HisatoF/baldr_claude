@@ -47,6 +47,7 @@ const QUALITY = {
     fxaa: true,
     shadowMapSize: 2048,
     maxPixelRatio: 2,
+    ssaa: 2.0,
   },
   medium: {
     bloomMips: 5,
@@ -65,6 +66,7 @@ const QUALITY = {
     fxaa: true,
     shadowMapSize: 1024,
     maxPixelRatio: 1.5,
+    ssaa: 1.5,
   },
   low: {
     bloomMips: 4,
@@ -83,6 +85,7 @@ const QUALITY = {
     fxaa: false,
     shadowMapSize: 512,
     maxPixelRatio: 1,
+    ssaa: 1.0,
   },
 };
 
@@ -172,7 +175,15 @@ export class Post {
 
     this.fxaa.enabled = p.fxaa;
 
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, p.maxPixelRatio));
+    // Supersample factor, not just a cap.
+    //
+    // This line previously clamped devicePixelRatio to maxPixelRatio, which on a
+    // 1x display resolves to exactly 1 — no supersampling at all — and it runs from
+    // the constructor, so it silently overwrote the ratio the render module had just
+    // set. Post-AA cannot recover an edge that fell between samples, so the render
+    // has to actually be above display resolution for thin geometry to survive.
+    const dpr = window.devicePixelRatio || 1;
+    this.renderer.setPixelRatio(Math.min(Math.max(dpr, p.ssaa ?? 1), p.maxPixelRatio));
 
     if (this._width > 1) this.setSize(this._width, this._height);
     return p;

@@ -71,14 +71,9 @@ export function createRenderModule(canvas) {
         stencil: false,
         depth: true,
       });
-      // Supersample on the high tier.
-      //
-      // FXAA is a luma-based post pass: it can soften an aliased edge it can SEE, but
-      // it cannot recover a high-contrast edge that fell between samples in the first
-      // place. Rendering above display resolution and letting the downscale average
-      // is the only thing that fixes thin geometry, and this scene has plenty.
-      const ssaa = quality === 'high' ? 1.35 : 1.0;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio * ssaa, 2));
+      // Pixel ratio is owned by Post.setQuality(), which runs from the Post
+      // constructor below and would overwrite anything set here.
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.shadowMap.enabled = true;
       // PCFSoftShadowMap is deprecated in current three and silently downgrades
       // while logging a warning on every boot.
