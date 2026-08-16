@@ -257,6 +257,15 @@ export function createHudModule() {
         g.save();
         g.globalAlpha = shown.comboAlpha;
         g.translate(cx, cy);
+
+        // Backing plate. The readout sits over whatever the playfield happens to
+        // contain, and against a lit building face the glyphs lost most of their
+        // contrast. A dark plate with a bracket frame keeps it legible anywhere and
+        // matches the motif used by the rest of the overlay.
+        g.fillStyle = 'rgba(4,8,14,0.5)';
+        g.fillRect(-96, -52, 192, 128);
+        brackets(-96, -52, 192, 128, 13, 'rgba(90,217,255,0.26)', 1);
+
         g.scale(scale, scale);
 
         g.font = '800 50px ui-monospace, "SF Mono", Menlo, monospace';
@@ -353,11 +362,35 @@ export function createHudModule() {
         const ry = M;
         const RANGE = 90; // world units shown either side
 
-        g.fillStyle = 'rgba(4,8,14,0.55)';
+        g.fillStyle = 'rgba(4,8,14,0.62)';
         g.fillRect(rx, ry, rw, rh);
         brackets(rx, ry, rw, rh, 9, CYAN_DIM, 1);
         g.fillStyle = 'rgba(90,217,255,0.16)';
         g.fillRect(rx, ry + rh / 2, rw, 1);
+
+        // Graduations and range labels.
+        //
+        // Without these the widget was a dark rectangle holding one or two dots,
+        // which reads as placeholder UI someone forgot to finish rather than as an
+        // instrument. Ticks give the dots a scale to be read against.
+        g.fillStyle = 'rgba(90,217,255,0.22)';
+        for (let i = 1; i < 8; i++) {
+          const tx = rx + (rw / 8) * i;
+          const tall = i === 4;
+          g.fillRect(tx, ry + (tall ? 4 : rh / 2 - 4), 1, tall ? rh - 8 : 8);
+        }
+        label(`${RANGE}`, rx + 4, ry + rh - 4, 'rgba(90,217,255,0.40)', 7);
+        label(`${RANGE}`, rx + rw - 4, ry + rh - 4, 'rgba(90,217,255,0.40)', 7, 'right');
+
+        // Sweep line: a slow pass that makes the readout feel live rather than
+        // frozen, which matters most when no contacts are on it.
+        const sweep = (ctx.time.elapsed * 0.42) % 1;
+        const sx2 = rx + sweep * rw;
+        const grad = g.createLinearGradient(sx2 - 26, 0, sx2, 0);
+        grad.addColorStop(0, 'rgba(90,217,255,0)');
+        grad.addColorStop(1, 'rgba(90,217,255,0.20)');
+        g.fillStyle = grad;
+        g.fillRect(sx2 - 26, ry + 1, 26, rh - 2);
 
         const px = combat.player.pos.x;
         for (let i = 0; i < hostiles.length; i++) {

@@ -89,7 +89,9 @@ export function buildLighting(opts = {}) {
   // Intensities are in physical units and fall off as 1/r², so lighting a street
   // from 15-20 units up takes values in the thousands, not the tens.
   const neonSpecs = [
-    { c: PALETTE.magenta, x: -46, y: 11, z: -12, i: 430, d: 58 },
+    // Pulled back and tightened: at 430/58 this washed a third of the playfield to
+    // uniform magenta and the ground texture inside the pool was lost entirely.
+    { c: PALETTE.magenta, x: -46, y: 14, z: -12, i: 300, d: 44 },
     { c: PALETTE.cyan,    x:  12, y:  9, z: -16, i: 520, d: 62 },
     { c: PALETTE.amber,   x:  58, y: 13, z: -10, i: 380, d: 54 },
     { c: PALETTE.cyan,    x: -96, y: 10, z: -14, i: 320, d: 48 },

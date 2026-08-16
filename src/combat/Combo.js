@@ -1,5 +1,9 @@
 import { getWeapon, weaponDuration } from './Weapons.js';
 import { clamp } from '../core/MathUtil.js';
+import * as THREE from 'three';
+
+/** Scratch for resolving the muzzle in world space; never retained across a call. */
+const MUZZLE = new THREE.Vector3();
 
 /**
  * The combo system — the part of this game that matters most.
@@ -192,6 +196,19 @@ export class ComboSystem {
     }
 
     const origin = w.fire(ctx, owner, dx, dy) || { ox: owner.pos.x, oy: owner.pos.y };
+
+    // Prefer the mech's actual weapon arm as the muzzle. Firing from the entity
+    // centre puts the flash inside the torso, so it reads as the mech glowing
+    // rather than as a gun discharging.
+    const bones = ctx.combat.mech?.bones;
+    if (bones && !w.blade) {
+      const arm = bones.forearmR || bones.forearmL;
+      if (arm) {
+        arm.getWorldPosition(MUZZLE);
+        origin.ox = MUZZLE.x + dx * 0.9;
+        origin.oy = MUZZLE.y + dy * 0.9;
+      }
+    }
 
     ctx.bus.emit('weapon:fired', {
       weaponId: w.id,
