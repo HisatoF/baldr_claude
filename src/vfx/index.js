@@ -97,7 +97,7 @@ export function createVfxModule() {
           const n = budget(10);
           sparks.emit({
             x, y, z: 0.15, vx: dirX * 3, vy: dirY * 3,
-            life: 0.055, size0: 0.88, size1: 0.18,
+            life: 0.11, size0: 1.15, size1: 0.2,
             r0: 0.95, g0: 0.88, b0: 0.68, r1: 0.9, g1: 0.46, b1: 0.16, alpha: 0.75,
           });
           for (let i = 0; i < n; i++) {
@@ -280,6 +280,15 @@ export function createVfxModule() {
           dirX: p.normal?.x ?? 0,
           dirY: p.normal?.y ?? 0,
         });
+        // A heavy hit is a physical event, not just a light. Kick debris off the
+        // target and dust at its feet so the weight of the blow is visible.
+        if (amt > 0.55) {
+          api.burst('debris', p.point.x, p.point.y, { amount: amt * 0.7 });
+          const t = p.target;
+          if (t && t.grounded) {
+            api.burst('dust', t.pos.x, t.pos.y - (t.size?.y ?? 1), { amount: amt * 0.8 });
+          }
+        }
       });
 
       ctx.bus.on('weapon:fired', (p) => {

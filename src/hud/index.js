@@ -245,10 +245,12 @@ export function createHudModule() {
       shown.comboAlpha = damp(shown.comboAlpha, active ? 1 : 0, 10, dt);
 
       if (shown.comboAlpha > 0.01) {
-        const cx = W * 0.5;
+        // Off the centreline. A ~120px block parked mid-playfield occludes exactly
+        // the space an incoming enemy uses.
+        const cx = W * 0.235;
         // Kept below the horizon. At 0.19 the counter floated in the sky,
         // detached from the fight it was describing.
-        const cy = H * 0.42;
+        const cy = H * 0.30;
         const scale = 1 + Ease.outBack(comboPunch) * 0.22;
         const col = RANK_COLOR[cc.rank] || CYAN;
 
@@ -257,7 +259,7 @@ export function createHudModule() {
         g.translate(cx, cy);
         g.scale(scale, scale);
 
-        g.font = '800 62px ui-monospace, "SF Mono", Menlo, monospace';
+        g.font = '800 50px ui-monospace, "SF Mono", Menlo, monospace';
         g.textAlign = 'center';
         g.fillStyle = col;
         g.shadowColor = col;
@@ -269,7 +271,7 @@ export function createHudModule() {
         g.fillStyle = '#cfe9f8';
         g.fillText('HIT', 52, -4);
 
-        g.font = '800 30px ui-monospace, monospace';
+        g.font = '800 24px ui-monospace, monospace';
         g.fillStyle = col;
         g.fillText(cc.rank, 0, 32);
 
@@ -403,7 +405,8 @@ export function createHudModule() {
           g.fillStyle = thp > 0.35 ? MAGENTA : DANGER;
           g.fillRect(px - 24, py - r - 12, 48 * thp, 4);
 
-          label(t.archetype.toUpperCase(), px, py + r + 15, 'rgba(255,61,154,0.75)', 9, 'center');
+          // Above the silhouette, not through it — below, the hull occluded the text.
+          label(t.archetype.toUpperCase(), px, py - r - 18, 'rgba(255,61,154,0.8)', 9, 'center');
         }
       }
 

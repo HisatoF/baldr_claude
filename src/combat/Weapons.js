@@ -49,11 +49,13 @@ function spawnProjectile(ctx, owner, def, x, y, dx, dy, speed, opts = {}) {
   // dot that teleports between frames and a sustained burst reads as nothing at all
   // crossing the gap between the mech and its target.
   if (opts.tracer !== false && speed > 60) {
-    const len = Math.min(6.5, speed * 0.035);
+    const len = Math.min(9.0, speed * 0.05);
     ctx.vfx?.beam?.(x, y, x + dx * len, y + dy * len, {
       color: def.color,
-      width: opts.tracerWidth ?? 0.16,
-      life: 0.05,
+      width: opts.tracerWidth ?? 0.22,
+      // 0.05s is under three frames at 60fps: a burst could be mid-flight and the
+      // frame would still show nothing crossing the gap. Long enough to be caught.
+      life: 0.13,
     });
   }
 

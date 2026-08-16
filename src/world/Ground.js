@@ -328,15 +328,21 @@ export function buildGround(opts = {}) {
 
   /* ---------------- debris field ---------------- */
 
+  // Broken concrete: dark, rough, and NOT metallic.
+  //
+  // A white albedo at full metalness made these slabs the brightest surfaces in the
+  // frame — brighter than any emissive — so the eye went to the rubbish rather than
+  // to the mech, inverting the whole contrast hierarchy. Value is dropped well below
+  // the hero and metalness returned to something a dielectric would actually have.
   const rubbleMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
+    color: 0x525a66,
     map: asphalt.map,
     normalMap: asphalt.normalMap,
     roughnessMap: asphalt.orm,
     metalnessMap: asphalt.orm,
     roughness: 1.0,
-    metalness: 1.0,
-    envMapIntensity: 0.6,
+    metalness: 0.12,
+    envMapIntensity: 0.5,
   });
   disposables.push(rubbleMat);
 
