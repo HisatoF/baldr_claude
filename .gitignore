@@ -1,0 +1,15 @@
+# Dependencies — restored with `npm install`, never committed.
+node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Generated capture output.
+#
+# Every screenshot here is reproducible from a seed via tools/capture.mjs, so
+# committing them adds tens of megabytes of binary churn for nothing.
+shots/
+
+*.log
+.DS_Store
