@@ -339,11 +339,19 @@ export function makeMechSurface(size = 512, seed = 0x5eeda11) {
 export function makeContactShadowTexture(size = 128) {
   const { c, g } = canvas2d(size);
   const r = size / 2;
+  // OPAQUE luminance mask, not an alpha gradient.
+  //
+  // This previously painted black-with-varying-alpha and fed it to `map`, which
+  // relies on the browser's alpha upload behaviour and rendered as nothing at all.
+  // A solid white-to-black ramp consumed through `alphaMap` (which samples the green
+  // channel) is unambiguous: white is opaque, black is clear.
+  g.fillStyle = '#000000';
+  g.fillRect(0, 0, size, size);
   const grad = g.createRadialGradient(r, r, 0, r, r, r);
-  grad.addColorStop(0.0, 'rgba(0,0,0,0.85)');
-  grad.addColorStop(0.45, 'rgba(0,0,0,0.45)');
-  grad.addColorStop(0.78, 'rgba(0,0,0,0.12)');
-  grad.addColorStop(1.0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.42, 'rgba(150,150,150,1)');
+  grad.addColorStop(0.74, 'rgba(48,48,48,1)');
+  grad.addColorStop(1.0, 'rgba(0,0,0,1)');
   g.fillStyle = grad;
   g.fillRect(0, 0, size, size);
   const t = new THREE.CanvasTexture(c);

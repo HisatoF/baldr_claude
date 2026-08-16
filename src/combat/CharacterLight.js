@@ -26,13 +26,16 @@ export class CharacterLight {
 
     // Key: cool and high, from the same side as the world key so the two agree.
     this.key = new THREE.PointLight(PALETTE.keyLight, 340, 17, 2);
-    this.key.position.set(-3.2, 5.4, 5.0);
+    // High and close to overhead. Slung low it flooded the road directly beneath
+    // the mech, and since point lights here cast no shadow, that fill washed out the
+    // contact shadow and undid the grounding it exists to provide.
+    this.key.position.set(-2.4, 8.2, 3.4);
     this.group.add(this.key);
 
     // Rim: hot magenta from behind and below, opposite the key. This is the light
     // that actually separates the silhouette from the background.
     this.rim = new THREE.PointLight(PALETTE.rimLight, 330, 15, 2);
-    this.rim.position.set(3.0, 2.6, -4.2);
+    this.rim.position.set(3.0, 3.4, -4.6);
     this.group.add(this.rim);
 
     // A weak cyan kicker on the opposite side keeps the dark side from going flat.
@@ -66,7 +69,7 @@ export class CharacterLight {
     // Mirror the rig when the mech turns, so the key stays on the facing side and
     // the rim stays behind rather than swapping into the camera.
     const s = e.faceDir >= 0 ? 1 : -1;
-    this.key.position.x = -3.2 * s;
+    this.key.position.x = -2.4 * s;
     this.rim.position.x = 3.0 * s;
     this.kick.position.x = -3.4 * s;
 

@@ -181,10 +181,16 @@ export class MechAnimator {
     if (this.mech.contactShadow) {
       const groundY = pc.groundY ?? 0;
       const h = Math.max(0, y - e.size.y - groundY);
-      const s = clamp(1 - h / 14, 0.12, 1);
+      // Tight and dark rather than broad and faint.
+      //
+      // The mech carries its own short-range key light, which floods the ground
+      // directly beneath it with no occluder — a soft wide blob simply loses to that
+      // fill and the mech reads as pasted onto the road. Keeping the blob close to
+      // the actual footprint and letting it go genuinely dark is what re-seats it.
+      const s = clamp(1 - h / 11, 0.14, 1);
       this.mech.contactShadow.position.y = groundY - (y - e.size.y) + 0.02;
-      this.mech.contactShadow.scale.setScalar(0.55 + s * 0.75);
-      this.mech.contactShadow.material.opacity = 0.72 * Ease.outQuad(s);
+      this.mech.contactShadow.scale.setScalar(0.62 + s * 0.5);
+      this.mech.contactShadow.material.opacity = 0.94 * Ease.outQuad(s);
     }
   }
 }

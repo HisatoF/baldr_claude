@@ -1124,13 +1124,20 @@ export function createMech(opts = {}) {
   // --- contact shadow ------------------------------------------------------
   const shadowTex = makeContactShadowTexture(128);
   const contactShadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(3.4, 3.4),
+    new THREE.PlaneGeometry(2.6, 2.6),
     new THREE.MeshBasicMaterial({
-      map: shadowTex,
+      alphaMap: shadowTex,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.92,
       depthWrite: false,
       depthTest: false,
+      // DoubleSide is not optional here. PlaneGeometry faces +Z, and the -90° X
+      // rotation that lays it flat points that face straight DOWN into the road, so
+      // from an overhead camera only the culled back face was ever toward the
+      // viewer. The shadow was being rendered correctly and was invisible in every
+      // frame of the project until this was found by forcing it to 4x scale, full
+      // opacity and bright red and still seeing nothing.
+      side: THREE.DoubleSide,
       color: 0x000000,
       toneMapped: false,
     })
@@ -1140,7 +1147,7 @@ export function createMech(opts = {}) {
   // Draws AFTER the ground, not before. At renderOrder -1 the shadow was
   // rasterised first and the ground then painted straight over it, which is why
   // the mech appeared pasted onto the road with no occlusion at all.
-  contactShadow.renderOrder = 3;
+  contactShadow.renderOrder = 6;
   root.add(contactShadow);
 
   const mech = {

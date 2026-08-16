@@ -23,18 +23,26 @@ export function buildLighting(opts = {}) {
   // --- key ----------------------------------------------------------------
   // Angled so the mech's own geometry casts across itself rather than lighting flat.
   const key = new THREE.DirectionalLight(PALETTE.keyLight, 3.2);
-  key.position.set(-26, 44, 26);
-  key.target.position.set(0, 4, 0);
+  // BEHIND the play plane, not in front of it.
+  //
+  // This previously sat at z = +26, which is essentially where the camera is
+  // (z ≈ +24). A key co-located with the viewer throws every shadow directly away
+  // from the viewer, where the object casting it hides it completely — so the scene
+  // rendered a full shadow map that could never be seen, and every mech read as
+  // pasted onto the road. Moving the key behind and to the side throws shadows back
+  // toward camera, which is the whole point of having one.
+  key.position.set(-30, 40, -22);
+  key.target.position.set(0, 2, 4);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.near = 8;
-  key.shadow.camera.far = 140;
+  key.shadow.camera.far = 190;
   // The playfield is a wide, short corridor, so the shadow frustum is wide and short
   // too — a square frustum here would waste most of the map's texels on empty sky.
   key.shadow.camera.left = -70;
   key.shadow.camera.right = 70;
-  key.shadow.camera.top = 34;
-  key.shadow.camera.bottom = -14;
+  key.shadow.camera.top = 46;
+  key.shadow.camera.bottom = -26;
   key.shadow.bias = -0.0009;
   key.shadow.normalBias = 0.035;
   key.shadow.radius = 2.4;
@@ -106,7 +114,7 @@ export function buildLighting(opts = {}) {
     followShadow(x) {
       const TEXEL = 140 / 2048; // frustum width / map size
       const snapped = Math.round(x / TEXEL) * TEXEL;
-      key.position.x = snapped - 26;
+      key.position.x = snapped - 30;
       key.target.position.x = snapped;
       key.target.updateMatrixWorld();
     },
