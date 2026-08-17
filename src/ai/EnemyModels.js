@@ -99,9 +99,24 @@ function buildGrunt() {
   // chassis is the read, so the outline is an arch rather than a slab.
   put(parts, new THREE.BoxGeometry(2.5, 0.62, 1.5), 0, 1.42, 0, ARMOR);
   put(parts, new THREE.BoxGeometry(1.7, 0.40, 1.2), 0, 1.86, 0.05, ARMOR_D, { rz: 0.06 });
-  // Cyclops sensor
-  put(parts, new THREE.SphereGeometry(0.28, 10, 8), 0, 1.82, 0.72, EYE, { emissive: 2.1 });
-  put(parts, new THREE.BoxGeometry(0.9, 0.3, 0.2), 0, 1.82, 0.66, ARMOR_D);
+  // Forward sensor head on a short neck.
+  //
+  // The body alone is a box, and a box has no facing — a review called this "a slab
+  // on four sticks" that reads as a rectangle at 64px. A mass thrust forward of the
+  // chassis gives the outline a front, so which way the unit is looking is legible
+  // from the silhouette rather than only from the glow.
+  put(parts, new THREE.BoxGeometry(0.42, 0.34, 0.55), 0, 1.62, 0.95, FRAME, { rx: -0.22 });
+  put(parts, new THREE.BoxGeometry(0.86, 0.58, 0.72), 0, 1.55, 1.42, ARMOR, { rx: -0.16 });
+  // Brow cowl over the optic, so the head is not a plain block either.
+  put(parts, new THREE.BoxGeometry(1.0, 0.2, 0.5), 0, 1.82, 1.36, ARMOR_D, { rx: -0.34 });
+  put(parts, new THREE.SphereGeometry(0.26, 10, 8), 0, 1.5, 1.72, EYE, { emissive: 2.1 });
+  // Mandible prongs — a wide low cue that survives downscaling.
+  for (const ms of [-1, 1]) {
+    put(parts, new THREE.BoxGeometry(0.16, 0.16, 0.62), ms * 0.44, 1.3, 1.62, FRAME, { ry: ms * 0.22 });
+  }
+  // Dorsal spine, breaking the top of the box.
+  put(parts, new THREE.BoxGeometry(0.28, 0.34, 1.1), 0, 2.12, -0.2, ARMOR_D, { rx: 0.1 });
+  put(parts, new THREE.BoxGeometry(0.7, 0.14, 0.6), 0, 2.02, -0.72, FRAME);
   // Stubby legs, splayed
   for (const s of [-1, 1]) {
     // Splayed insect legs: two segments, kicked well outboard of the body.
