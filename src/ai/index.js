@@ -30,6 +30,11 @@ export function createAiModule() {
   const pos = new THREE.Vector3();
   const scl = new THREE.Vector3();
   const euler = new THREE.Euler();
+  const shadowPos = new THREE.Vector3();
+  const shadowScl = new THREE.Vector3();
+  const shadowM4 = new THREE.Matrix4();
+  const IDENT_Q = new THREE.Quaternion();
+  const shadowAlpha = new Float32Array(80);
 
   let waveIndex = 0;
   let waveTimer = 1.6;
@@ -424,6 +429,7 @@ export function createAiModule() {
       // Reset instance counts, then repack live enemies per archetype. Repacking
       // each frame keeps the instance buffer dense as enemies die in any order.
       for (const name in renderer.pools) renderer.pools[name].count = 0;
+      let shadowN = 0;
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
@@ -460,7 +466,33 @@ export function createAiModule() {
         c[idx * 3] = 1 + f * 2.2;
         c[idx * 3 + 1] = 1 + f * 1.9;
         c[idx * 3 + 2] = 1 + f * 1.9;
+
+        // Contact shadow, sized to the unit's footprint and fading with altitude.
+        // A flyer twelve units up should barely mark the ground; a brute standing on
+        // it should mark it hard.
+        if (shadowN < renderer.maxShadows) {
+          const groundY = ctx.world?.groundHeightAt?.(e.pos.x) ?? 0;
+          const h = Math.max(0, y - e.size.y - groundY);
+          const fade = clamp(1 - h / 9, 0.06, 1);
+          const w = e.size.x * 2.3 * (0.75 + fade * 0.35);
+          shadowPos.set(x, groundY + 0.03, e.z || 0);
+          shadowScl.set(w, 1, w * 0.78);
+          shadowM4.compose(shadowPos, IDENT_Q, shadowScl);
+          renderer.shadows.setMatrixAt(shadowN, shadowM4);
+          shadowAlpha[shadowN] = fade;
+          shadowN++;
+        }
       }
+
+      // One material means one opacity, so drive the strongest contact and let the
+      // per-instance scale carry the rest. Cheaper than a second material per enemy.
+      if (shadowN > 0) {
+        let peak = 0;
+        for (let i = 0; i < shadowN; i++) if (shadowAlpha[i] > peak) peak = shadowAlpha[i];
+        renderer.shadows.material.opacity = 0.86 * peak;
+        renderer.shadows.instanceMatrix.needsUpdate = true;
+      }
+      renderer.shadows.count = shadowN;
 
       for (const name in renderer.pools) {
         const mesh = renderer.pools[name];

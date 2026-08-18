@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTE } from '../render/Palette.js';
+import { makeContactShadowTexture } from '../combat/MechMaterials.js';
 import { makeMechSurface } from '../combat/MechMaterials.js';
 
 /**
@@ -323,10 +324,44 @@ export function buildEnemyRenderer() {
     pools[name] = mesh;
   }
 
+  // Contact shadows.
+  //
+  // A review measured the ground under a six-legged machine as marginally BRIGHTER
+  // than open ground — a ratio of 1.03 where any contact occlusion at all should put
+  // it below 1. The enemies were sitting on their own glow rather than on the street.
+  // One instanced quad per enemy, laid flat and multiplied over the road.
+  const shadowTex = makeContactShadowTexture(128);
+  disposables.push(shadowTex);
+  const shadowGeo = new THREE.PlaneGeometry(1, 1);
+  shadowGeo.rotateX(-Math.PI / 2);
+  disposables.push(shadowGeo);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    alphaMap: shadowTex,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    depthTest: false,
+    // The plane faces +Z before rotation, so laying it flat points its front face at
+    // the ground. Without DoubleSide only the culled back face ever faces the camera.
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  disposables.push(shadowMat);
+  const MAX_SHADOWS = 70;
+  const shadows = new THREE.InstancedMesh(shadowGeo, shadowMat, MAX_SHADOWS);
+  shadows.frustumCulled = false;
+  shadows.renderOrder = 6;
+  shadows.count = 0;
+  shadows.name = 'ai.contactShadows';
+  group.add(shadows);
+
   return {
     group,
     pools,
     material,
+    shadows,
+    maxShadows: MAX_SHADOWS,
     dispose() {
       for (const d of disposables) d.dispose?.();
     },
