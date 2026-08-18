@@ -50,16 +50,24 @@ export function buildLighting(opts = {}) {
   lights.key = key;
 
   // --- fill ---------------------------------------------------------------
-  // Raised from 2.25 with the ambient below it.
+  // Raised to 3.5 to fight crushed blacks, then brought most of the way back.
+  //
+  // Worth recording what this is NOT for, because two rounds were spent finding out.
+  // An impact frame measured p01 25 with zero pixels below luminance 8 and the
+  // obvious suspects were this and the bloom veil. Halving the ambient and cutting
+  // the hemisphere moved that frame's road by 0.15 luminance; disabling bloom
+  // entirely moved it by 0.00. The frame was simply standing inside a neon pool.
+  // Both terms can therefore stay low, which is where a night scene wants them.
   //
   // A crush mask — every pixel under luminance 8 painted magenta — showed the black
-  // was not one object but the shadow floor of the whole scene: the wall between
-  // every lit window, every debris prop, the terrace, and most of the player's own
-  // body. Three separate structural hypotheses were tested and discarded before the
-  // mask made it obvious. A hemisphere is the right place to spend the lift because
-  // it is directional top-to-bottom, so it fills upward-facing surfaces more than
-  // vertical ones and leaves the key's shadow shapes intact.
-  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 3.5);
+  // was not one object but the shadow floor of the whole scene. A hemisphere looked
+  // like the right place to spend the lift, because it is directional top-to-bottom
+  // and so leaves the key's shadow shapes intact. It fixed the number and cost the
+  // frame its night: with fog subsequently taking over the job of lifting distance,
+  // a hemisphere this strong was left flooding every upward-facing surface, and an
+  // impact frame measured p01 25 with literally zero pixels below luminance 8. A
+  // night scene has to be allowed some black.
+  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 2.1);
   group.add(hemi);
   lights.hemi = hemi;
 
@@ -77,7 +85,7 @@ export function buildLighting(opts = {}) {
   // everywhere; fog lifts by distance, which is what the crush actually correlated
   // with. With the haze carrying the background the ambient can go back down and the
   // near plane can keep its darks.
-  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 0.92);
+  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 0.6);
   group.add(amb);
   lights.ambient = amb;
 

@@ -48,6 +48,11 @@ export const PRESETS = {
   // been the lowest-scoring axis in every review while every frame reviewed showed a
   // machine standing still.
   dash:    { steps: 1980, desc: 'mid-dash, afterimage trail live', requireDashing: true },
+  // The impact shot. Same reasoning as `dash`: a review asked for debris in flight and
+  // measured that every fragment in the frame was resting on the ground, which is what
+  // a fixed step count will find almost every time — armour is airborne for under a
+  // second out of every exchange.
+  impact:  { steps: 1500, desc: 'debris in flight off a heavy hit', minHostiles: 3, requireAirborneDebris: 6 },
 };
 
 function arg(name, def = null) {
@@ -233,6 +238,30 @@ export async function capture(shots, opts = {}) {
         if (!ok) console.warn(`[warn] ${shot.name}: player never reached dash speed within the guard window`);
       }
 
+      if (shot.requireAirborneDebris) {
+        const ok = await page.evaluate((want) => {
+          const g = window.__game;
+          const airborne = () => {
+            const f = g.ctx.vfx?.fragments;
+            if (!f) return 0;
+            const gh = g.ctx.world?.groundHeightAt;
+            let n = 0;
+            for (let i = 0; i < f.n; i++) {
+              const gy = gh ? gh(f.x[i]) : 0;
+              // Clearly off the deck, not merely un-settled.
+              if (f.y[i] - gy > 1.4) n++;
+            }
+            return n;
+          };
+          for (let i = 0; i < 500; i++) {
+            if (airborne() >= want) return true;
+            g.advance(2, 2, false);
+          }
+          return false;
+        }, shot.requireAirborneDebris);
+        if (!ok) console.warn(`[warn] ${shot.name}: never saw ${shot.requireAirborneDebris} fragments in flight`);
+      }
+
       if (shot.requireGrounded) {
         const ok = await page.evaluate(() => {
           const g = window.__game;
@@ -282,6 +311,14 @@ export async function capture(shots, opts = {}) {
           y: p ? Math.round(p.pos.y * 100) / 100 : -1,
           hostiles: ai,
           combo: g.ctx.combat?.combo?.count ?? -1,
+          fragsAir: (() => {
+            const f = g.ctx.vfx?.fragments;
+            if (!f) return -1;
+            const gh = g.ctx.world?.groundHeightAt;
+            let n = 0;
+            for (let i = 0; i < f.n; i++) if (f.y[i] - (gh ? gh(f.x[i]) : 0) > 1.4) n++;
+            return n;
+          })(),
           ghosts: g.ctx.combat?.afterimage?.mesh?.count ?? -1,
           ghostsInScene: !!g.ctx.combat?.afterimage?.mesh?.parent,
           _hist: g.ctx.combat?.afterimage?._hist?.length ?? -1,
@@ -332,7 +369,7 @@ export async function capture(shots, opts = {}) {
             `fps=${String(perf.fps).padStart(5)} draws=${String(perf.drawCalls).padStart(4)} ` +
             `tris=${String(perf.triangles).padStart(8)} ` +
             `spd=${String(state.speed).padStart(5)} gnd=${state.grounded ? 'y' : 'n'} ` +
-            `host=${String(state.hostiles).padStart(2)} ghosts=${state.ghosts}/${state.ghostsInScene ? 'in' : 'OUT'} -> ${shot.out}`
+            `host=${String(state.hostiles).padStart(2)} ghosts=${state.ghosts} air=${state.fragsAir} -> ${shot.out}`
         );
         for (const e of errors.slice(0, 6)) console.log(`        ! ${e.slice(0, 200)}`);
       }

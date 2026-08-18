@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ParticleSystem } from './Particles.js';
 import { BeamPool } from './Beams.js';
+import { Fragments } from './Fragments.js';
 import { PALETTE } from '../render/Palette.js';
 
 /**
@@ -18,6 +19,7 @@ export function createVfxModule() {
   let sparks = null; // additive, hot, stretched
   let smoke = null; // normal-blended, soft, dark
   let beams = null;
+  let fragments = null;
   let attached = false;
   let rng = null;
 
@@ -242,6 +244,9 @@ export function createVfxModule() {
       }
     },
 
+    /** Live rigid-fragment pool, so the capture harness can find a frame with debris in flight. */
+    get fragments() { return fragments; },
+
     damageNumber() {
       // Damage readouts belong to the HUD layer, which owns all text.
     },
@@ -265,6 +270,7 @@ export function createVfxModule() {
         blending: THREE.NormalBlending,
       });
       beams = new BeamPool(96);
+      fragments = new Fragments();
 
       ctx.bus.on('fx:explosion', (p) => {
         api.burst('explosion', p.point.x, p.point.y, {
@@ -284,6 +290,15 @@ export function createVfxModule() {
         // target and dust at its feet so the weight of the blow is visible.
         if (amt > 0.55) {
           api.burst('debris', p.point.x, p.point.y, { amount: amt * 0.7 });
+          // Rigid chunks alongside the billboard debris. The billboards are the dust
+          // and grit; these are the pieces of armour, and they are what a still frame
+          // needs in order to say that something just got hit hard.
+          fragments.burst(p.point.x, p.point.y, {
+            amount: amt,
+            dirX: p.normal?.x ?? 0,
+            dirY: p.normal?.y ?? 0,
+            rng: () => rng.range(0, 1),
+          });
           const t = p.target;
           if (t && t.grounded) {
             api.burst('dust', t.pos.x, t.pos.y - (t.size?.y ?? 1), { amount: amt * 0.8 });
@@ -300,6 +315,7 @@ export function createVfxModule() {
         if (!e || e.kind === 'projectile') return;
         api.burst('explosion', e.pos.x, e.pos.y, { radius: 1.6 + (e.size?.x ?? 1), amount: 1.1 });
         api.burst('debris', e.pos.x, e.pos.y, { amount: 1 });
+        fragments.burst(e.pos.x, e.pos.y, { amount: 1.4, rng: () => rng.range(0, 1) });
       });
 
       ctx.vfx = api;
@@ -310,6 +326,8 @@ export function createVfxModule() {
         ctx.scene.add(smoke.mesh);
         ctx.scene.add(sparks.mesh);
         ctx.scene.add(beams.mesh);
+        ctx.scene.add(fragments.mesh);
+        ctx.scene.add(fragments.shadows);
         attached = true;
       }
 
@@ -323,11 +341,18 @@ export function createVfxModule() {
       sparks.update(scaled);
       smoke.update(scaled);
       beams.update(scaled);
+      // Fragments sample the terrain per fragment rather than sharing the player's
+      // ground height the way the particle systems do: they travel far enough across
+      // x that a single sample lands them inside a mound or floating over a crater.
+      fragments.update(scaled, ctx.world?.groundHeightAt);
 
       load = sparks.count / sparks.capacity;
     },
 
     dispose() {
+      if (fragments?.mesh?.parent) fragments.mesh.parent.remove(fragments.mesh);
+      if (fragments?.shadows?.parent) fragments.shadows.parent.remove(fragments.shadows);
+      fragments?.dispose();
       sparks?.dispose();
       smoke?.dispose();
       beams?.dispose();
