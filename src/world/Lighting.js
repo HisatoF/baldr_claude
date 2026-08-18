@@ -72,7 +72,12 @@ export function buildLighting(opts = {}) {
   // flattens the very shadow contrast that seats objects on the ground. The lift now
   // comes mostly from the hemisphere (which is directional top-to-bottom) and the key
   // carries proportionally more, so shadows stay readable.
-  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 1.15);
+  // Pulled back once the haze took over the job. Ambient lifts lit and shadowed
+  // surfaces equally, so using it to rescue crushed blacks costs foreground contrast
+  // everywhere; fog lifts by distance, which is what the crush actually correlated
+  // with. With the haze carrying the background the ambient can go back down and the
+  // near plane can keep its darks.
+  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 0.92);
   group.add(amb);
   lights.ambient = amb;
 

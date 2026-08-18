@@ -90,10 +90,12 @@ export function rectStats(img, x0, y0, rw, rh) {
   const y1 = Math.min(height, y0 + rh);
   let n = 0, sum = 0, sum2 = 0, min = 255, max = 0;
   let rs = 0, gs = 0, bs = 0;
+  const hist = new Uint32Array(256);
   for (let y = y0; y < y1; y++) {
     for (let x = x0; x < x1; x++) {
       const o = (y * width + x) * channels;
       const l = lum(data[o], data[o + 1], data[o + 2]);
+      hist[Math.round(l)]++;
       sum += l; sum2 += l * l; n++;
       if (l < min) min = l;
       if (l > max) max = l;
@@ -102,9 +104,19 @@ export function rectStats(img, x0, y0, rw, rh) {
   }
   if (!n) return null;
   const mean = sum / n;
+  // The black point of a region matters more than its mean for judging haze: aerial
+  // perspective lifts the DARKEST values of a distant plane toward the sky, and a
+  // region can hold a healthy mean while its shadows stay as deep as the foreground's.
+  let acc = 0;
+  let p05 = 255;
+  for (let v = 0; v < 256; v++) {
+    acc += hist[v];
+    if (acc >= n * 0.05) { p05 = v; break; }
+  }
   return {
     mean: +mean.toFixed(2),
     stdev: +Math.sqrt(Math.max(0, sum2 / n - mean * mean)).toFixed(2),
+    p05,
     min: +min.toFixed(1),
     max: +max.toFixed(1),
     rgb: [Math.round(rs / n), Math.round(gs / n), Math.round(bs / n)],
@@ -328,7 +340,10 @@ if (process.argv[1] && process.argv[1].endsWith('measure.mjs')) {
       }
       for (const q of rects) {
         const v = r[q.name];
-        console.log(`  ${q.name.padEnd(12)} mean ${String(v.mean).padStart(7)}  sd ${String(v.stdev).padStart(6)}  rgb ${v.rgb.join(',')}`);
+        console.log(
+          `  ${q.name.padEnd(12)} mean ${String(v.mean).padStart(7)}  sd ${String(v.stdev).padStart(6)}` +
+            `  p05 ${String(v.p05).padStart(3)}  rgb ${v.rgb.join(',')}`
+        );
       }
     }
   }

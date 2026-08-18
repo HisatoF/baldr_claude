@@ -22,7 +22,19 @@ export const PALETTE = {
   // resolved to the same value and separated only by overlap. Real haze over a city
   // at night is lit by the city itself, so it sits ABOVE the silhouettes it veils.
   // That inversion is the whole mechanism of aerial perspective.
-  haze: 0x2a2f47,
+  // Lifted twice from the original 0x2a2f47.
+  //
+  // Fog colour is the black point of every distant plane, and the black points were
+  // inverted: the corridor flanks and the embankment both sat at p05 ~10 while the
+  // directly-lit near ground sat at 30, so the further a surface was the DEEPER its
+  // shadows went. That is aerial perspective running backwards. A mean can look fine
+  // while this is happening — it is the fifth percentile that gives it away, which is
+  // why measure.mjs reports one per region now.
+  //
+  // Because FogExp2 falls off with the square of distance, raising this lifts the
+  // background hard and the foreground barely: the near road moved 68.0 to 68.9 while
+  // the flanks moved 23.0 to 34.5 and their p05 went 11 to 23.
+  haze: 0x4d5379,
   gunmetal: 0x2b323d, // primary hard-surface albedo
   steel: 0x545e6b, // lighter panel albedo
   shadowTint: 0x121b2b, // colour that shadows drift toward (never neutral grey)
