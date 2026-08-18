@@ -203,24 +203,28 @@ export async function capture(shots, opts = {}) {
             const p = g.ctx.combat?.player;
             return !!(p && Math.hypot(p.vel.x, p.vel.y) > 38);
           };
-          for (let i = 0; i < 120; i++) {
+          const ghosts = () => g.ctx.combat?.afterimage?.mesh?.count ?? 0;
+          // Searching costs frames, and frames are the expensive part under
+          // SwiftShader — a naive scan renders hundreds of full post chains and
+          // wedges the page long enough for the screenshot to time out. The scan
+          // therefore runs without compositing; the caller presents one frame at the
+          // end regardless of the outcome.
+          for (let i = 0; i < 400; i++) {
             if (dashing()) {
-              // Advance until the TRAIL exists, not until a step count elapses.
+              // Finding a dash is not the same as capturing one. The scan always
+              // lands on its first frame, where the trail this shot exists to show
+              // does not exist yet, and advancing a fixed count instead ran past the
+              // end of the dash and certified a frame at spd=18.3 as mid-dash.
               //
-              // The search always lands on the first frame of the dash, where the
-              // afterimage history holds one sample and the effect this shot exists
-              // to show is not on screen yet. A fixed follow-up count does not work
-              // either: advancing six steps ran past the end of the dash entirely
-              // (the report read spd=18.3 on a frame certified as mid-dash), and ten
-              // bought exactly one ghost, because the machine covers far less ground
-              // in the opening frames of a dash than its velocity suggests. Wait for
-              // the thing itself, and stop as soon as it is there.
+              // Advance until the trail is actually there — and if this particular
+              // dash ends first, go back to searching rather than shooting whatever
+              // the machine happens to be doing. A short dash at one seed is why the
+              // QA sweep produced a "dash" frame of a mech standing still.
               for (let k = 0; k < 40; k++) {
-                if ((g.ctx.combat?.afterimage?.mesh?.count ?? 0) >= 3) break;
+                if (ghosts() >= 3) return true;
                 if (!dashing()) break;
                 g.advance(2, 2, false);
               }
-              return true;
             }
             g.advance(2, 2, false);
           }
