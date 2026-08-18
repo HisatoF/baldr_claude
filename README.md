@@ -106,14 +106,25 @@ because three separate reviews wrote their own decoder to answer the same questi
 and because one confident, numerically specific finding turned out to be measuring
 something other than what it named. Arguments about a frame should be reproducible.
 
-Presets carry conditions, not just step counts. `minHostiles` advances until the
-arena is populated; `requireGrounded` until the mech's feet are down; `requireDashing`
-until the afterimage trail is actually on screen. The last two exist because the two
-lowest-scoring axes in every review — ground contact and motion — had no preset that
-guaranteed a frame in which they could be judged, and reviews kept concluding an
-effect was missing from frames where it was correctly absent. Every capture now also
-records what the simulation was doing when the shutter opened: speed, grounded,
-altitude, hostile count, ghost count.
+Presets carry conditions, not just step counts:
+
+| preset | condition |
+|---|---|
+| `heavy`, `late` | advance until the arena holds N hostiles |
+| `grounded` | until the mech's feet are actually down |
+| `dash` | until the afterimage trail is on screen, not merely until a dash starts |
+| `impact` | until six or more fragments are clearly off the deck |
+| `hitflash` | until an enemy is at peak hit flash |
+
+All of these exist for one reason: the lowest-scoring axes in every review — ground
+contact, motion, impact feedback — had no preset that guaranteed a frame in which they
+could be judged, and review after review concluded an effect was missing from a frame
+where it was correctly absent. A struck enemy is lit for a fifth of a second and armour
+is airborne for under one; a fixed step count will almost never catch either.
+
+Every capture also records what the simulation was doing when the shutter opened —
+speed, grounded, altitude, hostile count, ghosts, fragments in flight, peak enemy
+flash — so a claim about an image can be checked against the state that produced it.
 
 `docs/QUALITY_RUBRIC.md` is the standard reviews are scored against;
 `docs/CRITIC_BRIEF.md` is the standing instruction for reviewers.
@@ -185,6 +196,19 @@ Three later ones are the same family, and one is worse than any of the above:
   carried was silently discarded. The "advance until the arena is populated" logic
   that the harness documents at length, and that this README credited, had never once
   executed. The frame it was written to prevent is the frame every review was given.
+- **Aerial perspective was running backwards, and the mean did not show it.** The
+  corridor flanks measured luminance 23 against a directly-lit near road at 68 — the
+  furthest built surfaces in the frame were also the darkest. What gave it away was the
+  fifth percentile: flanks p05 11, embankment p05 10, near ground p05 30. A region
+  holds a perfectly reasonable average while its shadows stay as deep as the
+  foreground's, and it is the black point of a distant plane, not its average, that
+  says whether there is air between it and the camera.
+- **The hit flash was multiplying the wrong channel.** It scaled `instanceColor`,
+  which multiplies diffuse albedo, so a hit on a dark hull under night lighting
+  multiplied a small number and stayed small — zero pixels above 250 anywhere inside a
+  struck enemy while the HUD read 698 damage. It has to be emissive, and then it has
+  to be weighted by albedo, or the unit becomes one white shape and the player can see
+  that something was hit but not what.
 
 Two lessons generalise. A harness that reports "clean" while producing a black frame is
 worse than no harness — reviewing the image is not optional. And when something is
