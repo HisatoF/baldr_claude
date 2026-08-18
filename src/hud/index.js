@@ -278,13 +278,31 @@ export function createHudModule() {
         // matches the motif used by the rest of the overlay.
         // Feathered, not a hard rectangle. An un-graded vertical cut over a 3D
         // scene reads as an untreated DOM element pasted on top of the render.
+        // Feathered on BOTH axes. The horizontal ramp was added after a review
+        // called out an untreated vertical cut over the render; the same review's
+        // successor then measured hard horizontal boundaries at the plate's top and
+        // bottom, cutting cleanly across a building's window grid. A gradient on one
+        // axis only moves the seam, it does not remove it.
         const plate = g.createLinearGradient(-96, 0, 96, 0);
         plate.addColorStop(0.0, 'rgba(4,8,14,0.0)');
-        plate.addColorStop(0.16, 'rgba(4,8,14,0.55)');
-        plate.addColorStop(0.82, 'rgba(4,8,14,0.55)');
+        plate.addColorStop(0.16, 'rgba(4,8,14,0.58)');
+        plate.addColorStop(0.82, 'rgba(4,8,14,0.58)');
         plate.addColorStop(1.0, 'rgba(4,8,14,0.0)');
+        g.save();
         g.fillStyle = plate;
-        g.fillRect(-96, -52, 192, 128);
+        // Canvas2D has no two-axis gradient, and allocating a scratch canvas to
+        // composite one ramp through the other every frame is not worth it for a
+        // backing plate. Painting the horizontal ramp in horizontal bands whose alpha
+        // follows the vertical ramp gets there: at eight bands the steps are under
+        // one alpha level apart and no edge survives the grain pass.
+        for (let i = 0; i < 8; i++) {
+          const y0 = -60 + (144 / 8) * i;
+          const v = Math.min(1, Math.min((i + 0.5) / 1.6, (8 - i - 0.5) / 1.6));
+          g.globalAlpha = shown.comboAlpha * v;
+          g.fillRect(-96, y0, 192, 144 / 8 + 1);
+        }
+        g.restore();
+        g.globalAlpha = shown.comboAlpha;
         brackets(-96, -52, 192, 128, 13, 'rgba(90,217,255,0.26)', 1);
 
         g.scale(scale, scale);

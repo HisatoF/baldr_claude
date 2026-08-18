@@ -54,4 +54,9 @@ export const COLORS = Object.fromEntries(
 );
 
 /** World-space fog density used by the render module's default atmosphere. */
-export const FOG_DENSITY = 0.0069;
+// Raised from 0.0069. At the old density the midground corridor flanks — the largest
+// dark mass in frame — received only a 13% haze lift, so they sat at the same value
+// as the near towers and the plane ordering collapsed: the shot had a near plane and
+// a far plane and nothing between them. Aerial perspective has to do real work at
+// mid distance or it is only a backdrop tint.
+export const FOG_DENSITY = 0.0094;

@@ -293,6 +293,16 @@ export function buildGround(opts = {}) {
       v *= 1 - tyre * 0.20;
       v *= 1 - kerbFoot * 0.34;
       v *= 1 + kerbTop * 0.16;
+      // The rear terrace is a PLINTH, not more road.
+      //
+      // It reads as a single black mass across the middle third of the frame — the
+      // largest contributor to the crush map by a wide margin — because it is
+      // asphalt-dark, sits inside the corridor flanks' cast shadow, and faces away
+      // from the only light that casts. Physically it is the paved apron the towers
+      // stand on, lit at night by the towers themselves, so it should be markedly
+      // paler than the carriageway rather than an extension of it.
+      const terrace = sstep(15, 40, -z);
+      v *= 1 + terrace * 1.5;
       // scorch pooling in the crater features
       const gh = groundHeightAt(x);
       v *= 1 - Math.max(0, -gh) * 0.30;
@@ -492,7 +502,12 @@ export function buildGround(opts = {}) {
     disposables.push(t);
   }
   const rubbleMat = new THREE.MeshStandardMaterial({
-    color: 0x525a66,
+    // Darker again. Even after the value was first pulled down, a review measured
+    // the slab directly under the hero at luminance 102 — the brightest large mass
+    // in the playfield, brighter than the mech's own lit armour, so the eye landed
+    // on an empty quad instead of on the player. Set dressing loses the contrast
+    // contest to the hero or it is not set dressing.
+    color: 0x3d4450,
     map: rubbleMaps.map,
     normalMap: rubbleMaps.normalMap,
     roughnessMap: rubbleMaps.orm,

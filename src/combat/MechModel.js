@@ -1023,7 +1023,17 @@ export function createMech(opts = {}) {
   const surface = makeMechSurface(512, 0x5eeda11);
 
   const emiPulse = { value: 1 };
-  const material = new THREE.MeshStandardMaterial({
+  // PHYSICAL, for the clearcoat.
+  //
+  // A review measured 0.0147% of the frame above 250/255 and correctly read that as
+  // a failure rather than as restraint: there was not one specular hotspot anywhere
+  // on the armour, so a machine standing under four lights rendered matte. Dropping
+  // the base roughness would have fixed the highlights by making the whole surface
+  // glossy, which is wrong — the paint is matte and the LACQUER over it is not.
+  // A clearcoat layer is exactly that distinction, and it costs one material.
+  const material = new THREE.MeshPhysicalMaterial({
+    clearcoat: 0.62,
+    clearcoatRoughness: 0.16,
     map: surface.map,
     normalMap: surface.normalMap,
     roughnessMap: surface.roughnessMap,

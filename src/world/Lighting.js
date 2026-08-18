@@ -50,7 +50,16 @@ export function buildLighting(opts = {}) {
   lights.key = key;
 
   // --- fill ---------------------------------------------------------------
-  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 2.25);
+  // Raised from 2.25 with the ambient below it.
+  //
+  // A crush mask — every pixel under luminance 8 painted magenta — showed the black
+  // was not one object but the shadow floor of the whole scene: the wall between
+  // every lit window, every debris prop, the terrace, and most of the player's own
+  // body. Three separate structural hypotheses were tested and discarded before the
+  // mask made it obvious. A hemisphere is the right place to spend the lift because
+  // it is directional top-to-bottom, so it fills upward-facing surfaces more than
+  // vertical ones and leaves the key's shadow shapes intact.
+  const hemi = new THREE.HemisphereLight(PALETTE.fillSky, PALETTE.fillGround, 3.5);
   group.add(hemi);
   lights.hemi = hemi;
 
@@ -63,7 +72,7 @@ export function buildLighting(opts = {}) {
   // flattens the very shadow contrast that seats objects on the ground. The lift now
   // comes mostly from the hemisphere (which is directional top-to-bottom) and the key
   // carries proportionally more, so shadows stay readable.
-  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 0.72);
+  const amb = new THREE.AmbientLight(PALETTE.shadowTint, 1.15);
   group.add(amb);
   lights.ambient = amb;
 
@@ -97,7 +106,7 @@ export function buildLighting(opts = {}) {
   // and away from the viewer, so it lands on camera-facing walls and on nothing
   // that is already lit. It deliberately misses the road: the road's normal points
   // straight up and this light travels upward, so the ground receives zero from it.
-  const bounce = new THREE.DirectionalLight(PALETTE.fillSky, 5.2);
+  const bounce = new THREE.DirectionalLight(PALETTE.fillSky, 7.0);
   bounce.position.set(10, -8, 62);
   bounce.target.position.set(0, 16, -34);
   group.add(bounce, bounce.target);

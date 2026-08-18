@@ -271,7 +271,17 @@ export function buildCity(opts = {}) {
 
   const MID_N = 22;
   const midInst = new THREE.InstancedMesh(box, midMat, MID_N);
-  midInst.castShadow = true;
+  // The flanks do NOT cast.
+  //
+  // They did, and it was the single largest black region in every frame. The key
+  // sits at a 44-degree elevation — which is what makes the mech's own shadow rake
+  // toward the viewer instead of hiding behind it — so a 40 m tower at z = -30 lays
+  // a 42 m shadow straight across the carriageway and past the play plane. The
+  // result is physically correct and compositionally fatal: a third of the shot is
+  // an unlit band, and the one shadow that carries gameplay information (the
+  // player's) is invisible inside it. Set dressing does not get to delete the
+  // playfield.
+  midInst.castShadow = false;
   midInst.receiveShadow = true;
   midInst.frustumCulled = false;
 

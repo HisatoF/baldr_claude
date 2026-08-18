@@ -32,7 +32,10 @@ const GradeShader = {
     uExposure: { value: 1.0 },
     uLutIntensity: { value: 1.0 },
 
-    uVignette: { value: 0.62 },
+    // Pulled back from 0.62. The corner cells of a crush map ran 40-70% of pixels
+    // below luminance 8, and a vignette that dark stops framing the shot and starts
+    // deleting the corners of it.
+    uVignette: { value: 0.44 },
     uVignetteTint: { value: new THREE.Color(0x0a1420) },
 
     uGrain: { value: 0.035 },

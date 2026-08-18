@@ -248,6 +248,32 @@ export function crushGrid(img, cols = 10, rows = 6) {
   return out;
 }
 
+/**
+ * Paint every crushed pixel magenta over a dimmed copy of the frame.
+ *
+ * A crush percentage says how much; a grid says roughly where; neither says WHAT.
+ * Three consecutive hypotheses about the largest black mass in this scene — the
+ * terrace, the foreground band, the corridor flanks' cast shadow — were each
+ * plausible, each acted on, and each wrong, at a capture apiece. Looking at the mask
+ * settles it in one.
+ */
+export function crushMask(img, threshold = 8) {
+  const out = Buffer.alloc(img.width * img.height * 3);
+  for (let i = 0; i < img.width * img.height; i++) {
+    const o = i * img.channels;
+    const l = lum(img.data[o], img.data[o + 1], img.data[o + 2]);
+    const d = i * 3;
+    if (l < threshold) {
+      out[d] = 255; out[d + 1] = 0; out[d + 2] = 200;
+    } else {
+      out[d] = img.data[o] * 0.45;
+      out[d + 1] = img.data[o + 1] * 0.45;
+      out[d + 2] = img.data[o + 2] * 0.45;
+    }
+  }
+  return { width: img.width, height: img.height, data: out };
+}
+
 /* ---------------- CLI ---------------- */
 
 if (process.argv[1] && process.argv[1].endsWith('measure.mjs')) {
@@ -288,6 +314,12 @@ if (process.argv[1] && process.argv[1].endsWith('measure.mjs')) {
       console.log(`  mean ${s.mean}   crushed<8 ${s.crushedPct}%   clipped>250 ${s.clippedPct}%`);
       console.log(`  percentiles  p01 ${s.p01}  p05 ${s.p05}  p50 ${s.p50}  p95 ${s.p95}  p99 ${s.p99}`);
       console.log(`  bands (top->bottom) ${r.bands.join('  ')}`);
+      if (args.includes('--mask')) {
+        const m = crushMask(img);
+        const out = `shots/mask-${f.split('/').pop()}`;
+        writePNG(out, m.width, m.height, m.data);
+        console.log(`  crush mask -> ${out}`);
+      }
       if (args.includes('--crush')) {
         console.log('  crushed% grid (each cell = frame/10 wide, frame/6 tall):');
         for (const line of crushGrid(img)) {

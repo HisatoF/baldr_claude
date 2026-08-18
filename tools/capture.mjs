@@ -156,11 +156,27 @@ export async function capture(shots, opts = {}) {
       // byte-identical in cost to the idle frame and proved nothing. Advance until
       // the arena is actually populated, with a hard cap so this cannot hang.
       if (shot.minHostiles) {
-        for (let guard = 0; guard < 60; guard++) {
-          const n = await page.evaluate(() => window.__game.ctx.ai?.enemies?.length ?? 0);
-          if (n >= shot.minHostiles) break;
-          await page.evaluate(() => window.__game.advance(60));
+        // Without compositing, and chunked.
+        //
+        // Sixty round trips each presenting a full post chain is slow enough that the
+        // screenshot after it times out; running all of it inside one `evaluate`
+        // instead is worse, because thousands of simulation steps in a single
+        // synchronous block trips the browser's watchdog and the context goes away.
+        // Small non-presenting batches with an await between them are the only shape
+        // that survives both.
+        let got = false;
+        for (let guard = 0; guard < 30 && !got; guard++) {
+          got = await page.evaluate((want) => {
+            const g = window.__game;
+            for (let i = 0; i < 4; i++) {
+              if ((g.ctx.ai?.enemies?.length ?? 0) >= want) return true;
+              g.advance(60, 30, false);
+            }
+            return false;
+          }, shot.minHostiles);
         }
+        if (!got) console.warn(`[warn] ${shot.name}: arena never reached ${shot.minHostiles} hostiles`);
+        if (opts.verbose) console.log(`  minHostiles satisfied=${got}`);
       }
 
       // Ground contact is the rubric's most-cited axis and, until this existed, no
@@ -273,7 +289,11 @@ export async function capture(shots, opts = {}) {
 
       const outPath = resolve(ROOT, shot.out);
       mkdirSync(dirname(outPath), { recursive: true });
-      await page.screenshot({ path: outPath });
+      // A generous timeout, because the composite is done by SwiftShader on a CPU.
+      // The default 30 s is enough for most presets and not for the heaviest, which
+      // is the worst possible place for the limit to sit: the sweep would fail on
+      // exactly the frame that matters most and report it as a harness error.
+      await page.screenshot({ path: outPath, timeout: 180000 });
 
       // Measure a few real animation frames for an honest FPS reading.
       const perf = await page.evaluate(async () => {

@@ -87,6 +87,7 @@ particle effect in the game is two.
 node tools/capture.mjs --preset combat --label mine   # one deterministic screenshot
 node tools/qa.mjs --label round3                      # full preset sweep + JSON report
 node tools/ab.mjs --left a.png --right b.png --label x  # blind A/B comparison
+node tools/measure.mjs shot.png --crush --rect hero=760,420,240,220 --crop feet=850,480,300,180,3
 ```
 
 `capture.mjs` boots the game in headless Chromium with a real WebGL2 context,
@@ -97,6 +98,22 @@ smoke test: any console error fails the run.
 held in a separate key file, so a reviewing agent cannot infer which candidate is
 which from the path or ordering. Grades are only meaningful when identity is
 stripped.
+
+`measure.mjs` is a checked-in PNG decoder plus one fixed set of definitions —
+grounding ratio, plane luminance, black crush, highlight clip, and a
+nearest-neighbour crop-and-magnify for looking at a 40px detail honestly. It exists
+because three separate reviews wrote their own decoder to answer the same questions,
+and because one confident, numerically specific finding turned out to be measuring
+something other than what it named. Arguments about a frame should be reproducible.
+
+Presets carry conditions, not just step counts. `minHostiles` advances until the
+arena is populated; `requireGrounded` until the mech's feet are down; `requireDashing`
+until the afterimage trail is actually on screen. The last two exist because the two
+lowest-scoring axes in every review — ground contact and motion — had no preset that
+guaranteed a frame in which they could be judged, and reviews kept concluding an
+effect was missing from frames where it was correctly absent. Every capture now also
+records what the simulation was doing when the shutter opened: speed, grounded,
+altitude, hostile count, ghost count.
 
 `docs/QUALITY_RUBRIC.md` is the standard reviews are scored against;
 `docs/CRITIC_BRIEF.md` is the standing instruction for reviewers.
@@ -150,9 +167,34 @@ cause: the metric was reading saturated *content* — magenta emissives against 
 hulls give a large |R−B| at any edge. Acting on the recommendation would have deleted
 a working effect and fixed nothing.
 
+Three later ones are the same family, and one is worse than any of the above:
+
+- **The character rig was lighting the road, not the mech.** Its rim sat 3.4 units up
+  and its kicker 1.2 units up — both closer to the ground than to the machine they
+  existed to light — so inverse-square put a blown highlight beside the player
+  measuring 220 against 58 for clean road two metres away. The mech's contact shadow
+  was fighting a floodlight and losing. The lamp directly above them in the same file
+  already carried a comment about exactly this mistake; the fix had never been applied
+  to its neighbours.
+- **An afterimage stops being one the moment you can resolve it into shapes.** A
+  merged box block-out of the mech's mass is the obvious cheap ghost and it renders as
+  a stack of translucent cubes. Dimming does not help — the failure is that the
+  geometry is legible.
+- **A preset's conditions were being dropped on the way to the capture.** The shot
+  list was assembled by naming fields one at a time, so every condition a preset
+  carried was silently discarded. The "advance until the arena is populated" logic
+  that the harness documents at length, and that this README credited, had never once
+  executed. The frame it was written to prevent is the frame every review was given.
+
 Two lessons generalise. A harness that reports "clean" while producing a black frame is
 worse than no harness — reviewing the image is not optional. And when something is
 invisible, test whether it is being *drawn* before assuming it is missing — three of
 the four above were fully implemented and simply could not be seen. The corollary is
 that a reviewer's diagnosis is not evidence either: reproduce the measurement against
 a toggled build before changing anything on the strength of it.
+
+A third, from the preset bug and from `advanceDeterministic`'s `present` flag: a fix
+is not a fix until you have watched it run. Both of those were correct code sitting in
+the repository, doing nothing, for several rounds — and in both cases the thing that
+finally exposed them was instrumenting the harness to report what it had actually
+done, rather than trusting that it had done what it said.
