@@ -141,7 +141,7 @@ actually looked at. Four were worth the trouble on their own:
   making streak length a function of framerate. It looked worst on exactly the hardware
   that could least afford it.
 
-A fourth case cut the other way, and is worth keeping for that reason. A review
+One further case cut the other way, and is worth keeping for that reason. A review
 measured colour fringing at 11.75 in the frame centre against 2.84 at the corner,
 called it physically backwards for a lens effect, and asked for the chromatic
 aberration pass to be made radial or removed. Disabling that pass entirely moved the
