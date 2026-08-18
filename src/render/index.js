@@ -85,7 +85,7 @@ export function createRenderModule(canvas) {
 
       scene = new THREE.Scene();
       scene.background = COLORS.night.clone();
-      scene.fog = new THREE.FogExp2(PALETTE.night, FOG_DENSITY);
+      scene.fog = new THREE.FogExp2(PALETTE.haze, FOG_DENSITY);
 
       camera = new THREE.PerspectiveCamera(46, 16 / 9, 0.5, 900);
       camera.position.set(0, 8, 42);

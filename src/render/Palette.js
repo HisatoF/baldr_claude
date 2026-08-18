@@ -14,7 +14,15 @@ import * as THREE from 'three';
 export const PALETTE = {
   // --- base / environment -------------------------------------------------
   void: 0x04060a, // deepest background, the "off" pixel
-  night: 0x070b14, // fog + sky base
+  night: 0x070b14, // sky base / clear colour
+  // Atmospheric haze — DELIBERATELY lighter than the night base.
+  //
+  // Fog was previously tinted to `night`, so everything distant faded toward
+  // near-black and the skyline lost depth instead of gaining it: near and far towers
+  // resolved to the same value and separated only by overlap. Real haze over a city
+  // at night is lit by the city itself, so it sits ABOVE the silhouettes it veils.
+  // That inversion is the whole mechanism of aerial perspective.
+  haze: 0x2a2f47,
   gunmetal: 0x2b323d, // primary hard-surface albedo
   steel: 0x545e6b, // lighter panel albedo
   shadowTint: 0x121b2b, // colour that shadows drift toward (never neutral grey)
@@ -46,4 +54,4 @@ export const COLORS = Object.fromEntries(
 );
 
 /** World-space fog density used by the render module's default atmosphere. */
-export const FOG_DENSITY = 0.0062;
+export const FOG_DENSITY = 0.0069;
