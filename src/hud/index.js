@@ -262,7 +262,14 @@ export function createHudModule() {
         // contain, and against a lit building face the glyphs lost most of their
         // contrast. A dark plate with a bracket frame keeps it legible anywhere and
         // matches the motif used by the rest of the overlay.
-        g.fillStyle = 'rgba(4,8,14,0.5)';
+        // Feathered, not a hard rectangle. An un-graded vertical cut over a 3D
+        // scene reads as an untreated DOM element pasted on top of the render.
+        const plate = g.createLinearGradient(-96, 0, 96, 0);
+        plate.addColorStop(0.0, 'rgba(4,8,14,0.0)');
+        plate.addColorStop(0.16, 'rgba(4,8,14,0.55)');
+        plate.addColorStop(0.82, 'rgba(4,8,14,0.55)');
+        plate.addColorStop(1.0, 'rgba(4,8,14,0.0)');
+        g.fillStyle = plate;
         g.fillRect(-96, -52, 192, 128);
         brackets(-96, -52, 192, 128, 13, 'rgba(90,217,255,0.26)', 1);
 
@@ -379,8 +386,9 @@ export function createHudModule() {
           const tall = i === 4;
           g.fillRect(tx, ry + (tall ? 4 : rh / 2 - 4), 1, tall ? rh - 8 : 8);
         }
-        label(`${RANGE}`, rx + 4, ry + rh - 4, 'rgba(90,217,255,0.40)', 7);
-        label(`${RANGE}`, rx + rw - 4, ry + rh - 4, 'rgba(90,217,255,0.40)', 7, 'right');
+        // Units, not bare numbers. "90" on its own is placeholder text.
+        label(`-${RANGE}m`, rx + 4, ry + rh - 4, 'rgba(90,217,255,0.42)', 7);
+        label(`+${RANGE}m`, rx + rw - 4, ry + rh - 4, 'rgba(90,217,255,0.42)', 7, 'right');
 
         // Sweep line: a slow pass that makes the readout feel live rather than
         // frozen, which matters most when no contacts are on it.
@@ -408,7 +416,7 @@ export function createHudModule() {
         // Player pip
         g.fillStyle = CYAN;
         g.fillRect(rx + rw / 2 - 1.5, ry + rh / 2 - 4, 3, 8);
-        label('SCAN', rx + 5, ry - 5, CYAN_DIM, 8);
+        label('SCAN', rx + 13, ry - 6, CYAN_DIM, 8);
       }
 
       /* ---------------- lock-on reticle ---------------- */
@@ -439,7 +447,17 @@ export function createHudModule() {
           g.fillRect(px - 24, py - r - 12, 48 * thp, 4);
 
           // Above the silhouette, not through it — below, the hull occluded the text.
-          label(t.archetype.toUpperCase(), px, py - r - 18, 'rgba(255,61,154,0.8)', 9, 'center');
+          // Cool and outlined, NOT magenta: dark red type sitting on a hot magenta
+          // bloom core is unreadable at any size, which is what it was doing.
+          const nameY = py - r - 18;
+          const nm = t.archetype.toUpperCase();
+          g.font = '600 9px ui-monospace, "SF Mono", Menlo, monospace';
+          g.textAlign = 'center';
+          g.lineWidth = 3;
+          g.strokeStyle = 'rgba(2,5,10,0.85)';
+          g.strokeText(nm, px, nameY);
+          g.fillStyle = '#cfefff';
+          g.fillText(nm, px, nameY);
         }
       }
 

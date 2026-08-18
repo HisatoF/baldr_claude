@@ -141,7 +141,18 @@ actually looked at. Four were worth the trouble on their own:
   making streak length a function of framerate. It looked worst on exactly the hardware
   that could least afford it.
 
+A fourth case cut the other way, and is worth keeping for that reason. A review
+measured colour fringing at 11.75 in the frame centre against 2.84 at the corner,
+called it physically backwards for a lens effect, and asked for the chromatic
+aberration pass to be made radial or removed. Disabling that pass entirely moved the
+number by 0.16. The pass was already masked out of screen centre and was never the
+cause: the metric was reading saturated *content* — magenta emissives against dark
+hulls give a large |R−B| at any edge. Acting on the recommendation would have deleted
+a working effect and fixed nothing.
+
 Two lessons generalise. A harness that reports "clean" while producing a black frame is
 worse than no harness — reviewing the image is not optional. And when something is
-invisible, test whether it is being *drawn* before assuming it is missing: three of the
-four above were fully implemented and simply could not be seen.
+invisible, test whether it is being *drawn* before assuming it is missing — three of
+the four above were fully implemented and simply could not be seen. The corollary is
+that a reviewer's diagnosis is not evidence either: reproduce the measurement against
+a toggled build before changing anything on the strength of it.
