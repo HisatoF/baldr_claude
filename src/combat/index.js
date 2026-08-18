@@ -1,6 +1,7 @@
 import { createMech } from './MechModel.js';
 import { PlayerController } from './PlayerController.js';
 import { MechAnimator } from './MechAnimator.js';
+import { Afterimage } from './Afterimage.js';
 import { CharacterLight } from './CharacterLight.js';
 import { ComboSystem } from './Combo.js';
 import { DemoPilot } from './DemoPilot.js';
@@ -19,6 +20,7 @@ export function createCombatModule() {
   let mech = null;
   let controller = null;
   let animator = null;
+  let afterimage = null;
   let charLight = null;
   let combo = null;
   let pilot = null;
@@ -36,6 +38,7 @@ export function createCombatModule() {
     get mech() { return mech; },
     get controller() { return controller; },
     get animator() { return animator; },
+    get afterimage() { return afterimage; },
     get charLight() { return charLight; },
     get comboSystem() { return combo; },
     get pilot() { return pilot; },
@@ -257,6 +260,7 @@ export function createCombatModule() {
       mech = createMech();
       controller = new PlayerController(player, ctx.bus);
       animator = new MechAnimator(mech);
+      afterimage = new Afterimage(mech.metrics);
       charLight = new CharacterLight();
       combo = new ComboSystem(player, api.loadout);
 
@@ -332,6 +336,7 @@ export function createCombatModule() {
         ctx.scene.add(mech.root);
         ctx.scene.add(charLight.group);
         ctx.scene.add(charLight.root);
+        ctx.scene.add(afterimage.mesh);
         mech.syncEnvironment?.(ctx.scene);
         ctx.render?.setCameraTarget?.(player);
         attached = true;
@@ -342,6 +347,14 @@ export function createCombatModule() {
       if (mech.sabre) mech.sabre.visible = !!(a && a.blade);
 
       animator.update(player, controller, dt, alpha);
+      // Speed has to leave evidence in a still frame. See Afterimage for why this is
+      // a proxy silhouette rather than a replayed pose.
+      afterimage.update(
+        player,
+        mech.root.rotation.y,
+        Math.hypot(player.vel.x, player.vel.y),
+        dt
+      );
       charLight.update(player, dt, animator.thrust);
       // The nearest hostile doubles as a practical light so the mech casts a shadow
       // driven by the thing threatening it.
@@ -353,6 +366,8 @@ export function createCombatModule() {
       if (mech?.root?.parent) mech.root.parent.remove(mech.root);
       if (charLight?.group?.parent) charLight.group.parent.remove(charLight.group);
       charLight?.dispose();
+      if (afterimage?.mesh?.parent) afterimage.mesh.parent.remove(afterimage.mesh);
+      afterimage?.dispose();
     },
   };
 }

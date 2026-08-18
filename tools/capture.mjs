@@ -43,6 +43,11 @@ export const PRESETS = {
   // The grounding shot. Nothing else about it is special; it exists so that the
   // one axis that keeps failing has a frame it can honestly be judged in.
   grounded: { steps: 1500, desc: 'feet on the road, under load', minHostiles: 3, requireGrounded: true },
+  // The motion shot, for the same reason. A dash lasts 0.17 s out of a 30 s run, so
+  // the odds of a fixed step count landing inside one are poor — and "motion" has
+  // been the lowest-scoring axis in every review while every frame reviewed showed a
+  // machine standing still.
+  dash:    { steps: 1980, desc: 'mid-dash, afterimage trail live', requireDashing: true },
 };
 
 function arg(name, def = null) {
@@ -165,20 +170,110 @@ export async function capture(shots, opts = {}) {
       // should, and every measurement taken of "the ground under the feet" was
       // measuring open road. A claim about grounding needs a frame where the machine
       // is actually on the ground.
+      if (shot.requireDashing) {
+        // The search runs INSIDE the page. A dash is 20 simulation steps long, so
+        // finding one means stepping two at a time and checking — several hundred
+        // round trips through the CDP bridge, which times out long before the
+        // simulation would have found anything.
+        // Searching costs frames, and frames are the expensive part under
+        // SwiftShader — a naive 2-steps-at-a-time scan renders ~900 composites and
+        // wedges the page long enough for the screenshot to time out. The scan runs
+        // with a coarse frame interval; once a dash is found, a short fine pass with
+        // the normal interval lets every frame-integrated system (camera lead, the
+        // afterimage history, motion blur) catch up before the shot is taken.
+        const ok = await page.evaluate(() => {
+          const g = window.__game;
+          const dashing = () => {
+            const p = g.ctx.combat?.player;
+            return !!(p && Math.hypot(p.vel.x, p.vel.y) > 38);
+          };
+          for (let i = 0; i < 120; i++) {
+            if (dashing()) {
+              // Advance until the TRAIL exists, not until a step count elapses.
+              //
+              // The search always lands on the first frame of the dash, where the
+              // afterimage history holds one sample and the effect this shot exists
+              // to show is not on screen yet. A fixed follow-up count does not work
+              // either: advancing six steps ran past the end of the dash entirely
+              // (the report read spd=18.3 on a frame certified as mid-dash), and ten
+              // bought exactly one ghost, because the machine covers far less ground
+              // in the opening frames of a dash than its velocity suggests. Wait for
+              // the thing itself, and stop as soon as it is there.
+              for (let k = 0; k < 40; k++) {
+                if ((g.ctx.combat?.afterimage?.mesh?.count ?? 0) >= 3) break;
+                if (!dashing()) break;
+                g.advance(2, 2, false);
+              }
+              return true;
+            }
+            g.advance(2, 2, false);
+          }
+          return false;
+        });
+        if (!ok) console.warn(`[warn] ${shot.name}: player never reached dash speed within the guard window`);
+      }
+
       if (shot.requireGrounded) {
-        let ok = false;
-        for (let guard = 0; guard < 90; guard++) {
-          ok = await page.evaluate(() => {
-            const p = window.__game.ctx.combat?.player;
-            return !!(p && p.grounded);
-          });
-          if (ok) break;
-          await page.evaluate(() => window.__game.advance(6));
-        }
+        const ok = await page.evaluate(() => {
+          const g = window.__game;
+          for (let i = 0; i < 240; i++) {
+            if (g.ctx.combat?.player?.grounded) return true;
+            g.advance(6, 6, false);
+          }
+          return false;
+        });
         if (!ok) console.warn(`[warn] ${shot.name}: player never grounded within the guard window`);
       }
 
       const simWallMs = Date.now() - t0;
+
+      // SCREENSHOT FIRST, then measure.
+      //
+      // The perf block below runs the engine live for 1.2 s of wall clock. It used to
+      // run before the screenshot, which meant every "deterministic" frame this
+      // project has ever reviewed was actually taken 1.2 seconds of real play past
+      // the step count it was labelled with. That is why a capture that searched for
+      // a dash produced a picture of a mech standing still, and why the grounded
+      // preset was not reliably grounded: the harness found the state it was asked
+      // for and then played on past it.
+      // Always leave the page with a freshly composited frame.
+      //
+      // The timeline searches above run with `present = false`, which is what makes
+      // them affordable under software WebGL — but it also means the last thing the
+      // page did was not draw. `page.screenshot` then waits for a frame commit that
+      // never arrives and times out at 30 s. One presented step costs 1/120 s of
+      // simulation and makes the capture reliable.
+      await page.evaluate(() => window.__game.advance(1, 1, true));
+
+      // What was actually true at the instant of the shot.
+      //
+      // Reviews of this project have repeatedly argued about a frame's content
+      // without knowing what the simulation was doing when it was taken — a contact
+      // shadow judged missing on an airborne mech, a motion trail judged missing on
+      // a stationary one. The report now records the state, so a claim about the
+      // image can be checked against it.
+      const state = await page.evaluate(() => {
+        const g = window.__game;
+        const p = g.ctx.combat?.player;
+        const ai = g.ctx.ai?.enemies?.length ?? -1;
+        return {
+          speed: p ? Math.round(Math.hypot(p.vel.x, p.vel.y) * 10) / 10 : -1,
+          grounded: p ? !!p.grounded : null,
+          y: p ? Math.round(p.pos.y * 100) / 100 : -1,
+          hostiles: ai,
+          combo: g.ctx.combat?.combo?.count ?? -1,
+          ghosts: g.ctx.combat?.afterimage?.mesh?.count ?? -1,
+          ghostsInScene: !!g.ctx.combat?.afterimage?.mesh?.parent,
+          _hist: g.ctx.combat?.afterimage?._hist?.length ?? -1,
+          _acc: Math.round((g.ctx.combat?.afterimage?._acc ?? -1) * 100) / 100,
+          _t: Math.round((g.ctx.combat?.afterimage?._t ?? -1) * 100) / 100,
+          _histAges: (g.ctx.combat?.afterimage?._hist ?? []).map((h) => Math.round((g.ctx.combat.afterimage._t - h.t) * 1000) / 1000 + ':' + h.g),
+        };
+      });
+
+      const outPath = resolve(ROOT, shot.out);
+      mkdirSync(dirname(outPath), { recursive: true });
+      await page.screenshot({ path: outPath });
 
       // Measure a few real animation frames for an honest FPS reading.
       const perf = await page.evaluate(async () => {
@@ -201,19 +296,19 @@ export async function capture(shots, opts = {}) {
         };
       });
 
-      const outPath = resolve(ROOT, shot.out);
-      mkdirSync(dirname(outPath), { recursive: true });
-      await page.screenshot({ path: outPath });
       await page.close();
 
-      const r = { ...shot, ok: errors.length === 0, errors, warnings, perf, simWallMs };
+      const r = { ...shot, ok: errors.length === 0, errors, warnings, perf, state, simWallMs };
+      if (opts.verbose) console.log('  state ' + JSON.stringify(state));
       results.push(r);
       if (!opts.quiet) {
         const status = r.ok ? 'ok ' : 'ERR';
         console.log(
           `[${status}] ${shot.name.padEnd(10)} step=${String(shot.steps).padStart(5)} ` +
             `fps=${String(perf.fps).padStart(5)} draws=${String(perf.drawCalls).padStart(4)} ` +
-            `tris=${String(perf.triangles).padStart(8)} -> ${shot.out}`
+            `tris=${String(perf.triangles).padStart(8)} ` +
+            `spd=${String(state.speed).padStart(5)} gnd=${state.grounded ? 'y' : 'n'} ` +
+            `host=${String(state.hostiles).padStart(2)} ghosts=${state.ghosts}/${state.ghostsInScene ? 'in' : 'OUT'} -> ${shot.out}`
         );
         for (const e of errors.slice(0, 6)) console.log(`        ! ${e.slice(0, 200)}`);
       }
@@ -245,17 +340,22 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (steps) {
     shots = [{ name: presetName || 'custom', steps: Number(steps), out: out || `shots/${label}.png`, seed }];
   } else if (presetName && PRESETS[presetName]) {
-    shots = [{ name: presetName, steps: PRESETS[presetName].steps, out: out || `shots/${label}-${presetName}.png`, seed }];
+    // Spread the preset. Listing fields by hand here silently dropped every
+    // condition a preset carries — `minHostiles`, `requireGrounded`,
+    // `requireDashing` — so the "advance until the arena is populated" logic that
+    // this file documents at length had never once executed, on either path. The
+    // heavy preset was a plain step count all along.
+    shots = [{ ...PRESETS[presetName], name: presetName, out: out || `shots/${label}-${presetName}.png`, seed }];
   } else {
     shots = Object.entries(PRESETS).map(([name, p]) => ({
+      ...p,
       name,
-      steps: p.steps,
       out: `shots/${label}-${name}.png`,
       seed,
     }));
   }
 
-  const results = await capture(shots, { quiet: false });
+  const results = await capture(shots, { quiet: false, verbose: process.argv.includes('--verbose') });
   const failed = results.filter((r) => !r.ok);
   if (failed.length) {
     console.error(`\n${failed.length}/${results.length} capture(s) reported errors.`);

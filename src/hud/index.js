@@ -45,6 +45,8 @@ export function createHudModule() {
   // instrumentation.
   const shown = { hp: 1, en: 1, hpChip: 1, combo: 0, comboAlpha: 0 };
   let comboPunch = 0;
+  /** Last non-empty combo state, so the plate has something to show while it fades. */
+  const latched = { count: 0, rank: '', damage: 0, timeLeft: 0 };
   let lastComboCount = 0;
 
   function ensureCanvas() {
@@ -243,6 +245,18 @@ export function createHudModule() {
       // A zero-value readout is placeholder content and must never render.
       const active = cc.count > 1 && cc.timeLeft > 0 && cc.damage > 0;
       shown.comboAlpha = damp(shown.comboAlpha, active ? 1 : 0, 10, dt);
+      // LATCH the values while the readout is alive.
+      //
+      // The alpha fades out over ~0.3 s but the combo state zeroes the instant the
+      // chain drops, so the plate spent its whole fade drawing "0 HIT / D / 0 DMG" —
+      // the exact placeholder content the check above exists to prevent, arrived at
+      // from the other side. A frame caught mid-fade reads as a broken HUD.
+      if (active) {
+        latched.count = cc.count;
+        latched.rank = cc.rank;
+        latched.damage = cc.damage;
+        latched.timeLeft = cc.timeLeft;
+      }
 
       if (shown.comboAlpha > 0.01) {
         // Off the centreline. A ~120px block parked mid-playfield occludes exactly
@@ -252,7 +266,7 @@ export function createHudModule() {
         // detached from the fight it was describing.
         const cy = H * 0.30;
         const scale = 1 + Ease.outBack(comboPunch) * 0.22;
-        const col = RANK_COLOR[cc.rank] || CYAN;
+        const col = RANK_COLOR[latched.rank] || CYAN;
 
         g.save();
         g.globalAlpha = shown.comboAlpha;
@@ -280,7 +294,7 @@ export function createHudModule() {
         g.fillStyle = col;
         g.shadowColor = col;
         g.shadowBlur = 26;
-        g.fillText(`${cc.count}`, 0, 0);
+        g.fillText(`${latched.count}`, 0, 0);
         g.shadowBlur = 0;
 
         g.font = '700 17px ui-monospace, monospace';
@@ -289,15 +303,15 @@ export function createHudModule() {
 
         g.font = '800 24px ui-monospace, monospace';
         g.fillStyle = col;
-        g.fillText(cc.rank, 0, 32);
+        g.fillText(latched.rank, 0, 32);
 
         g.font = '600 12px ui-monospace, monospace';
         g.fillStyle = CYAN_DIM;
-        g.fillText(`${cc.damage} DMG`, 0, 52);
+        g.fillText(`${latched.damage} DMG`, 0, 52);
 
         // Chain timer: a thin bar that visibly runs out.
         const tw = 150;
-        const frac = clamp(cc.timeLeft / 1.35, 0, 1);
+        const frac = clamp(latched.timeLeft / 1.35, 0, 1);
         g.fillStyle = 'rgba(255,255,255,0.10)';
         g.fillRect(-tw / 2, 62, tw, 3);
         g.fillStyle = col;

@@ -42,7 +42,7 @@ async function boot() {
     ready: true,
     captureMode,
     /** Advance exactly n simulation steps and render one frame. */
-    advance: (n) => engine.advanceDeterministic(n),
+    advance: (n, stepsPerFrame, present) => engine.advanceDeterministic(n, stepsPerFrame, present),
     stats: () => engine.stats,
   };
 

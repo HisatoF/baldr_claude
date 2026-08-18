@@ -1133,7 +1133,16 @@ export function createMech(opts = {}) {
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
-    toneMapped: false,
+    // TONE MAPPED, unlike every other additive effect here.
+    //
+    // Skipping the tone map writes the plume's raw value straight to the target, and
+    // the nozzle end of this geometry carries a vertex colour of ~1.7 — doubled again
+    // by DoubleSide, since you see the far wall of the cone through the near one. The
+    // result measured as a hard-edged quad 7% of whose pixels were above 250/255 with
+    // no falloff and no hue: the hottest object in the frame was achromatic, which
+    // broke the palette at exactly the point the eye is pulled to. Running it through
+    // ACES lets the highlight roll off and keeps the flame orange while it does.
+    toneMapped: true,
   });
   const thrusters = [];
   for (const z of [0.3, -0.3]) {
@@ -1252,12 +1261,14 @@ function makePlumeGeometry() {
   g.translate(0, -0.5, 0);
   const pos = g.attributes.position;
   const col = new Float32Array(pos.count * 3);
-  const c0 = new THREE.Color(0xfff3d0);
-  const c1 = new THREE.Color(0xff7a1c);
+  // The core is warm, not white. Let the bloom pass whiten it if it wants to; baking
+  // white into the source throws the colour away before anything can use it.
+  const c0 = new THREE.Color(0xffd79a);
+  const c1 = new THREE.Color(0xff6a10);
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const t = Math.min(1, Math.max(0, -pos.getY(i)));
-    c.copy(c0).lerp(c1, Math.pow(t, 0.6)).multiplyScalar(Math.pow(1 - t, 1.6) * 1.7 + 0.02);
+    c.copy(c0).lerp(c1, Math.pow(t, 0.6)).multiplyScalar(Math.pow(1 - t, 1.6) * 1.15 + 0.02);
     col[i * 3] = c.r;
     col[i * 3 + 1] = c.g;
     col[i * 3 + 2] = c.b;

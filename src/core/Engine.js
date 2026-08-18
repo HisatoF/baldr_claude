@@ -203,8 +203,14 @@ export class Engine {
    * Deterministically advance `n` simulation steps and render one frame, ignoring
    * wall-clock time entirely. This is what the automated capture harness drives, so
    * that a screenshot taken at step N is byte-reproducible across runs.
+   *
+   * `present = false` runs the whole thing without ever compositing. The harness
+   * needs it to SEARCH the timeline — finding the frame in which the player is
+   * mid-dash means testing every few steps, and under software WebGL a full post
+   * chain per test wedges the page long enough for the screenshot to time out. The
+   * simulation and every frame-integrated system still run; only the draw is skipped.
    */
-  advanceDeterministic(n, stepsPerFrame = 2) {
+  advanceDeterministic(n, stepsPerFrame = 2, present = true) {
     // Frames are interleaved with simulation steps rather than run once at the end.
     //
     // Running N steps and then a single frame starves every system that integrates
@@ -226,7 +232,7 @@ export class Engine {
       this.ctx.time.alpha = 0;
       this.ctx.time.dt = dt;
       this.ctx.time.frame++;
-      this.ctx.time.present = remaining <= 0;
+      this.ctx.time.present = present && remaining <= 0;
       for (const m of this.modules) {
         if (m.frame) m.frame(this.ctx, dt, 0);
       }
