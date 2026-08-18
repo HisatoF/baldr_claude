@@ -196,8 +196,8 @@ export function buildCity(opts = {}) {
   // Two ranks so the skyline has internal depth. The far rank is dimmer and bluer;
   // the fog does most of that work, but the emissive intensity helps it along.
   const backRanks = [
-    { z: -300, count: 40, wMin: 16, wMax: 38, hMin: 18, hMax: 78,  emis: 0.20, tint: 0x070b12 },
-    { z: -205, count: 30, wMin: 14, wMax: 32, hMin: 14, hMax: 52,  emis: 0.34, tint: 0x0a0f18 },
+    { z: -300, count: 40, wMin: 16, wMax: 38, hMin: 18, hMax: 78,  emis: 0.20, tint: 0x11182a },
+    { z: -205, count: 30, wMin: 14, wMax: 32, hMin: 14, hMax: 52,  emis: 0.34, tint: 0x161d30 },
   ];
 
   for (let r = 0; r < backRanks.length; r++) {
@@ -238,7 +238,7 @@ export function buildCity(opts = {}) {
   const concrete = makeConcrete({
     size: 512,
     seed: 8812,
-    base: [0.07, 0.075, 0.09],
+    base: [0.115, 0.122, 0.145],
     cracks: 7,
     aggregate: 0.8,
     stain: 1.0,
@@ -260,6 +260,12 @@ export function buildCity(opts = {}) {
     emissive: 0xffffff,
     emissiveMap: midWin,
     emissiveIntensity: 0.34,
+    // The corridor flanks are the largest dark mass in frame and they were reading
+    // as cut paper. A rough dielectric at night still gathers the sky and the glow
+    // of the city around it; that is what the PMREM environment is for, and leaving
+    // this at the default meant the biggest surfaces in the shot were the ones least
+    // able to pick up any of it.
+    envMapIntensity: 1.8,
   });
   disposables.push(midMat);
 

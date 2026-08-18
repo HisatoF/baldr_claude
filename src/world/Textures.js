@@ -574,6 +574,7 @@ export function makeMetalPanel(o = {}) {
  * @param {[number,number,number]} [o.base]
  * @param {number} [o.cracks=7]      crack seeds
  * @param {number} [o.aggregate=1]   speckle density multiplier
+ * @param {number} [o.macroHeight=0.22] how much the metre-scale noise band displaces
  * @param {number} [o.stain=1]
  * @param {number} [o.rough=0.88]
  */
@@ -614,7 +615,15 @@ export function makeConcrete(o = {}) {
       const chip = sstep(0.60, 0.80, grain) * aggAmt;
       const dust = (fine - 0.5) * 0.35;
 
-      let hgt = 0.5 + (macro - 0.5) * 0.22 + chip * 0.10 + (grain - 0.5) * 0.05 + dust * 0.05;
+      // Macro contributes to COLOUR strongly and to HEIGHT barely.
+      //
+      // These were coupled at 0.22, which on a surface tiling every ~9 m meant the
+      // normal map carried metre-scale swells. Lit by a low key that reads as a
+      // field of lumps — the road looked like crumpled foil rather than asphalt.
+      // Large-scale tonal drift is what breaks up tiling; large-scale *relief* is
+      // what makes a flat surface stop looking flat, and asphalt is meant to be flat.
+      const macroH = o.macroHeight ?? 0.22;
+      let hgt = 0.5 + (macro - 0.5) * macroH + chip * 0.10 + (grain - 0.5) * 0.05 + dust * 0.05;
 
       const tint = 0.80 + macro * 0.45;
       let r = base[0] * tint;

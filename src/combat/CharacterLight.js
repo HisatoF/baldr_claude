@@ -25,22 +25,61 @@ export class CharacterLight {
     this.group.name = 'combat.characterLight';
 
     // Key: cool and high, from the same side as the world key so the two agree.
-    this.key = new THREE.PointLight(PALETTE.keyLight, 340, 17, 2);
-    // High and close to overhead. Slung low it flooded the road directly beneath
-    // the mech, and since point lights here cast no shadow, that fill washed out the
-    // contact shadow and undid the grounding it exists to provide.
-    this.key.position.set(-2.4, 8.2, 3.4);
-    this.group.add(this.key);
+    //
+    // A SPOT, and it casts.
+    //
+    // As a point light this was the reason the mech never looked seated. A point
+    // light cannot cast in this renderer's budget, so the character key put ~20 lux
+    // on the road directly under the mech with nothing in the way — measured, the
+    // ground beneath the feet came out at 81 against 58 for clean road two metres
+    // off, a ratio of 1.40 where any contact at all should be below 1. The blob
+    // decal was fighting a floodlight and losing, and no amount of darkening the
+    // blob fixes a light that should never have reached that ground in the first
+    // place. A spot from above with a shadow map means the mech's own torso and
+    // legs occlude the fill, which is both the physically right answer and the one
+    // that puts a real, moving, articulated shadow under the machine.
+    //
+    // Placed OBLIQUELY, not overhead. Slung almost straight down it did cast, and
+    // the shadow it cast landed directly beneath the machine where the machine's own
+    // body hides it — the same geometry mistake the world key made from the camera
+    // position, arrived at from the opposite direction. The spot now sits behind and
+    // to the key side, matching the world key's bearing, so the cast shadow rakes
+    // out toward the viewer where it can be seen.
+    this.key = new THREE.SpotLight(PALETTE.keyLight, 900, 30, 0.68, 0.6, 2);
+    this.key.position.set(-5.6, 8.2, -5.0);
+    this.key.castShadow = true;
+    this.key.shadow.mapSize.set(1024, 1024);
+    this.key.shadow.camera.near = 1.2;
+    this.key.shadow.camera.far = 26;
+    this.key.shadow.bias = -0.0011;
+    this.key.shadow.normalBias = 0.018;
+    this.key.shadow.radius = 1.4;
+    this.keyTarget = new THREE.Object3D();
+    this.keyTarget.position.set(0.6, 0.4, 1.6);
+    this.key.target = this.keyTarget;
+    this.group.add(this.key, this.keyTarget);
 
-    // Rim: hot magenta from behind and below, opposite the key. This is the light
-    // that actually separates the silhouette from the background.
+    // Rim: hot magenta from behind, opposite the key. This is the light that
+    // actually separates the silhouette from the background.
+    //
+    // Height matters more than intensity here. Inverse-square falloff means a lamp
+    // 3.4 units up puts ~28 lux on the road directly beneath it and a tenth of that
+    // four units away, so a rim slung at mech-chest height does not rim anything —
+    // it paints a saturated puddle of its own colour on the ground and flattens
+    // every texture inside it.
     this.rim = new THREE.PointLight(PALETTE.rimLight, 330, 15, 2);
-    this.rim.position.set(3.0, 3.4, -4.6);
+    this.rim.position.set(3.0, 5.4, -4.6);
     this.group.add(this.rim);
 
     // A weak cyan kicker on the opposite side keeps the dark side from going flat.
-    this.kick = new THREE.PointLight(PALETTE.cyan, 120, 12, 2);
-    this.kick.position.set(-3.4, 1.2, -3.0);
+    //
+    // Raised for the same reason, and it was the worse offender: at 1.2 units up it
+    // was closer to the road than to the mech it was supposed to be lighting, and
+    // measured out as a 220-mean blown highlight beside the player against a road
+    // otherwise sitting at 57. The `key` above already carries a comment about
+    // exactly this mistake; the fix was never applied to the other two lamps.
+    this.kick = new THREE.PointLight(PALETTE.cyan, 105, 13, 2);
+    this.kick.position.set(-3.4, 4.2, -3.0);
     this.group.add(this.kick);
 
     this._boost = 0;
@@ -114,16 +153,18 @@ export class CharacterLight {
     // Mirror the rig when the mech turns, so the key stays on the facing side and
     // the rim stays behind rather than swapping into the camera.
     const s = e.faceDir >= 0 ? 1 : -1;
-    this.key.position.x = -2.4 * s;
+    this.key.position.x = -5.6 * s;
+    this.keyTarget.position.x = 0.6 * s;
     this.rim.position.x = 3.0 * s;
     this.kick.position.x = -3.4 * s;
+
 
     this._boost = damp(this._boost, 0, 8, dt);
     const b = 1 + this._boost + thrust * 0.5;
 
-    this.key.intensity = 340 * b;
+    this.key.intensity = 900 * b;
     this.rim.intensity = 330 * b;
-    this.kick.intensity = 120 * (1 + thrust * 1.4);
+    this.kick.intensity = 105 * (1 + thrust * 1.4);
   }
 
   dispose() {

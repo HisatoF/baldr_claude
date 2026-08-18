@@ -40,6 +40,9 @@ export const PRESETS = {
   // and proved nothing about readability under pressure.
   heavy:   { steps: 2040, desc: 'mid-wave, heavy load', minHostiles: 5 },
   late:    { steps: 3480, desc: '29s in — wave escalation', minHostiles: 4 },
+  // The grounding shot. Nothing else about it is special; it exists so that the
+  // one axis that keeps failing has a frame it can honestly be judged in.
+  grounded: { steps: 1500, desc: 'feet on the road, under load', minHostiles: 3, requireGrounded: true },
 };
 
 function arg(name, def = null) {
@@ -153,6 +156,26 @@ export async function capture(shots, opts = {}) {
           if (n >= shot.minHostiles) break;
           await page.evaluate(() => window.__game.advance(60));
         }
+      }
+
+      // Ground contact is the rubric's most-cited axis and, until this existed, no
+      // preset guaranteed a frame in which it could be judged at all. Three separate
+      // rounds argued about a missing contact shadow using screenshots of an
+      // AIRBORNE mech — the shadow was correct, fading with altitude exactly as it
+      // should, and every measurement taken of "the ground under the feet" was
+      // measuring open road. A claim about grounding needs a frame where the machine
+      // is actually on the ground.
+      if (shot.requireGrounded) {
+        let ok = false;
+        for (let guard = 0; guard < 90; guard++) {
+          ok = await page.evaluate(() => {
+            const p = window.__game.ctx.combat?.player;
+            return !!(p && p.grounded);
+          });
+          if (ok) break;
+          await page.evaluate(() => window.__game.advance(6));
+        }
+        if (!ok) console.warn(`[warn] ${shot.name}: player never grounded within the guard window`);
       }
 
       const simWallMs = Date.now() - t0;

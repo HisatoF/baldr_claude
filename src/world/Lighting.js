@@ -84,6 +84,25 @@ export function buildLighting(opts = {}) {
   group.add(rim2, rim2.target);
   lights.rim2 = rim2;
 
+  // --- street bounce ------------------------------------------------------
+  // The corridor flanks measured at luminance 10-13 against a road at 48, and
+  // nearly a third of the frame sat below luminance 8. The cause is geometric, not
+  // a missing ambient term: the key is behind the play plane (which is what makes
+  // shadows visible at all), so every wall facing the camera is a back face and
+  // receives nothing. Raising ambient to fix that would lift the shadows the key
+  // exists to create.
+  //
+  // A night city solves this for itself — the street below is the light source, and
+  // facades are lit from underneath. This is that: a dim directional travelling up
+  // and away from the viewer, so it lands on camera-facing walls and on nothing
+  // that is already lit. It deliberately misses the road: the road's normal points
+  // straight up and this light travels upward, so the ground receives zero from it.
+  const bounce = new THREE.DirectionalLight(PALETTE.fillSky, 5.2);
+  bounce.position.set(10, -8, 62);
+  bounce.target.position.set(0, 16, -34);
+  group.add(bounce, bounce.target);
+  lights.bounce = bounce;
+
   // --- neon bounce --------------------------------------------------------
   // Stand-ins for signage spill — ACCENTS, not floodlights.
   //
