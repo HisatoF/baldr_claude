@@ -246,32 +246,69 @@ export function buildCity(opts = {}) {
     normalStrength: 1.8,
   });
 
-  const midWin = makeWindowGrid(4242, 16, 32);
-  midWin.repeat.set(2, 2);
-  disposables.push(midWin);
+  // Three districts, not one wall.
+  //
+  // One material across all 22 blocks meant one window texture at one repeat, so the
+  // whole midground shared a single pitch, a single lit-window density and a single
+  // colour temperature — a facade band that reads as wallpaper however much
+  // silhouette variation the parapets and roof plant add above it. The variation a
+  // skyline needs most is not in its outline, it is in how differently its buildings
+  // are occupied at night. Three materials is three draw calls, which this frame can
+  // afford several times over.
+  //
+  // `emissiveIntensity` and texture repeat are material uniforms, so per-instance
+  // variation is not available without a custom shader; splitting the population is
+  // the cheap way to get the same effect.
+  const DISTRICTS = [
+    { seed: 4242, cols: 16, rows: 32, repeat: [2, 2], emis: 0.40, tint: 0xffffff },
+    { seed: 7717, cols: 10, rows: 22, repeat: [3, 3], emis: 0.22, tint: 0xc8d4e6 },
+    { seed: 9091, cols: 22, rows: 44, repeat: [1.4, 1.6], emis: 0.38, tint: 0xffdcb4 },
+  ];
 
-  const midMat = new THREE.MeshStandardMaterial({
-    map: concrete.map,
-    normalMap: concrete.normalMap,
-    roughnessMap: concrete.orm,
-    metalnessMap: concrete.orm,
-    roughness: 0.9,
-    metalness: 0.05,
-    emissive: 0xffffff,
-    emissiveMap: midWin,
-    emissiveIntensity: 0.34,
-    // The corridor flanks are the largest dark mass in frame and they were reading
-    // as cut paper. A rough dielectric at night still gathers the sky and the glow
-    // of the city around it; that is what the PMREM environment is for, and leaving
-    // this at the default meant the biggest surfaces in the shot were the ones least
-    // able to pick up any of it.
-    envMapIntensity: 1.8,
+  const midMats = DISTRICTS.map((d) => {
+    const win = makeWindowGrid(d.seed, d.cols, d.rows);
+    win.repeat.set(d.repeat[0], d.repeat[1]);
+    disposables.push(win);
+    const m = new THREE.MeshStandardMaterial({
+      map: concrete.map,
+      normalMap: concrete.normalMap,
+      roughnessMap: concrete.orm,
+      metalnessMap: concrete.orm,
+      roughness: 0.9,
+      metalness: 0.05,
+      emissive: d.tint,
+      emissiveMap: win,
+      emissiveIntensity: d.emis,
+      // The corridor flanks are the largest dark mass in frame and they were reading
+      // as cut paper. A rough dielectric at night still gathers the sky and the glow
+      // of the city around it; that is what the PMREM environment is for, and leaving
+      // this at the default meant the biggest surfaces in the shot were the ones
+      // least able to pick up any of it.
+      envMapIntensity: 1.8,
+    });
+    disposables.push(m);
+    return m;
   });
-  disposables.push(midMat);
+  // Parapets, cornices and roof plant all take the first district's material. They
+  // are small, high, and mostly silhouette against the sky, so which facade they
+  // carry matters far less than keeping them to one draw call each.
+  const midMat = midMats[0];
 
   const MID_N = 22;
-  const midInst = new THREE.InstancedMesh(box, midMat, MID_N);
-  // The flanks do NOT cast.
+  // Which district each block belongs to. Neighbours differ, so the eye never gets
+  // two identical facades side by side, but the assignment is not strictly cyclic
+  // either — a repeating A-B-C is its own kind of wallpaper.
+  const DISTRICT_OF = [0, 2, 1, 0, 1, 2, 0, 0, 1, 2, 1, 0, 2, 0, 1, 1, 2, 0, 1, 2, 0, 1];
+  const midInsts = midMats.map((m) => {
+    const inst = new THREE.InstancedMesh(box, m, MID_N);
+    inst.castShadow = false;
+    inst.receiveShadow = true;
+    inst.frustumCulled = false;
+    inst.count = 0;
+    return inst;
+  });
+  const midCounts = [0, 0, 0];
+  // The flanks do NOT cast (set on each district mesh above).
   //
   // They did, and it was the single largest black region in every frame. The key
   // sits at a 44-degree elevation — which is what makes the mech's own shadow rake
@@ -281,9 +318,6 @@ export function buildCity(opts = {}) {
   // an unlit band, and the one shadow that carries gameplay information (the
   // player's) is invisible inside it. Set dressing does not get to delete the
   // playfield.
-  midInst.castShadow = false;
-  midInst.receiveShadow = true;
-  midInst.frustumCulled = false;
 
   // Rooftop plant, parapets and cornices.
   //
@@ -319,7 +353,8 @@ export function buildCity(opts = {}) {
     scl.set(w, h, d);
     q.identity();
     m4.compose(pos, q, scl);
-    midInst.setMatrixAt(i, m4);
+    const dIdx = DISTRICT_OF[i % DISTRICT_OF.length];
+    midInsts[dIdx].setMatrixAt(midCounts[dIdx]++, m4);
 
     // Parapet: slightly wider than the shaft, capping the top edge.
     pos.set(x, h + 0.6, z);
@@ -354,12 +389,15 @@ export function buildCity(opts = {}) {
     }
   }
 
-  midInst.instanceMatrix.needsUpdate = true;
+  for (let d = 0; d < midInsts.length; d++) {
+    midInsts[d].count = midCounts[d];
+    midInsts[d].instanceMatrix.needsUpdate = true;
+  }
   capInst.count = capN;
   plantInst.count = plantN;
   capInst.instanceMatrix.needsUpdate = true;
   plantInst.instanceMatrix.needsUpdate = true;
-  midGroup.add(midInst, capInst, plantInst);
+  midGroup.add(...midInsts, capInst, plantInst);
 
   /* ---------------- holographic signage ---------------- */
   const signGeo = new THREE.PlaneGeometry(1, 1);
