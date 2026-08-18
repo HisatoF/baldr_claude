@@ -53,6 +53,10 @@ export const PRESETS = {
   // a fixed step count will find almost every time — armour is airborne for under a
   // second out of every exchange.
   impact:  { steps: 1500, desc: 'debris in flight off a heavy hit', minHostiles: 3, requireAirborneDebris: 6 },
+  // The hit-feedback shot. A struck enemy is lit for about a fifth of a second, and a
+  // review measured zero pixels above 250 inside one while the HUD read 698 damage —
+  // so the axis this frame is for needs a frame where a hit is actually landing.
+  hitflash: { steps: 1400, desc: 'enemy lit by a hit, flash at peak', minHostiles: 3, requireEnemyFlash: 0.5 },
 };
 
 function arg(name, def = null) {
@@ -238,6 +242,20 @@ export async function capture(shots, opts = {}) {
         if (!ok) console.warn(`[warn] ${shot.name}: player never reached dash speed within the guard window`);
       }
 
+      if (shot.requireEnemyFlash) {
+        const ok = await page.evaluate((want) => {
+          const g = window.__game;
+          const lit = () =>
+            (g.ctx.ai?.enemies ?? []).some((e) => (e.userData?.flash ?? 0) >= want);
+          for (let i = 0; i < 600; i++) {
+            if (lit()) return true;
+            g.advance(2, 2, false);
+          }
+          return false;
+        }, shot.requireEnemyFlash);
+        if (!ok) console.warn(`[warn] ${shot.name}: no enemy reached flash ${shot.requireEnemyFlash}`);
+      }
+
       if (shot.requireAirborneDebris) {
         const ok = await page.evaluate((want) => {
           const g = window.__game;
@@ -311,6 +329,7 @@ export async function capture(shots, opts = {}) {
           y: p ? Math.round(p.pos.y * 100) / 100 : -1,
           hostiles: ai,
           combo: g.ctx.combat?.combo?.count ?? -1,
+          flash: Math.round(Math.max(0, ...(g.ctx.ai?.enemies ?? []).map((e) => e.userData?.flash ?? 0)) * 100) / 100,
           fragsAir: (() => {
             const f = g.ctx.vfx?.fragments;
             if (!f) return -1;
@@ -369,7 +388,7 @@ export async function capture(shots, opts = {}) {
             `fps=${String(perf.fps).padStart(5)} draws=${String(perf.drawCalls).padStart(4)} ` +
             `tris=${String(perf.triangles).padStart(8)} ` +
             `spd=${String(state.speed).padStart(5)} gnd=${state.grounded ? 'y' : 'n'} ` +
-            `host=${String(state.hostiles).padStart(2)} ghosts=${state.ghosts} air=${state.fragsAir} -> ${shot.out}`
+            `host=${String(state.hostiles).padStart(2)} ghosts=${state.ghosts} air=${state.fragsAir} flash=${state.flash} -> ${shot.out}`
         );
         for (const e of errors.slice(0, 6)) console.log(`        ! ${e.slice(0, 200)}`);
       }

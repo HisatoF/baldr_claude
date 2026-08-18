@@ -460,12 +460,22 @@ export function createAiModule() {
         m4.compose(pos, quat, scl);
         mesh.setMatrixAt(idx, m4);
 
-        // Flash toward white on hit.
+        // Flash on hit.
+        //
+        // The diffuse tint is kept — it lifts the hull's own colour and reads at low
+        // flash values — but the part that actually registers is the emissive
+        // channel, because multiplying a dark albedo by 2.65 under night lighting
+        // still leaves it dark. See EnemyModels for the shader patch.
         const f = u.flash;
         const c = mesh.instanceColor.array;
         c[idx * 3] = 1 + f * 2.2;
         c[idx * 3 + 1] = 1 + f * 1.9;
         c[idx * 3 + 2] = 1 + f * 1.9;
+        const fa = mesh.userData.flash;
+        if (fa) {
+          fa.array[idx] = f;
+          fa.needsUpdate = true;
+        }
 
         // Contact shadow, sized to the unit's footprint and fading with altitude.
         // A flyer twelve units up should barely mark the ground; a brute standing on

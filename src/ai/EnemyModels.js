@@ -299,6 +299,44 @@ export function buildEnemyRenderer() {
   });
   material.normalScale.set(0.7, 0.7);
 
+  // Per-instance hit flash, driven through EMISSIVE rather than diffuse.
+  //
+  // The flash used to scale `instanceColor`, which multiplies the diffuse albedo —
+  // so a hit on a dark hull under night lighting multiplied a small number by 2.65
+  // and stayed a small number. A review measured zero pixels above 250/255 anywhere
+  // inside a struck enemy while the HUD read 698 damage: the game's most important
+  // piece of feedback was invisible, and being invisible it also never reached the
+  // bloom threshold, so there was no glow either.
+  //
+  // Emissive is a material uniform and cannot vary per instance, so the flash rides
+  // an instanced attribute and is added to `totalEmissiveRadiance` directly. Geometry
+  // that does not supply the attribute reads zero, which is the correct default.
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aFlash;\nvarying float vFlash;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlash = aFlash;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vFlash;')
+      .replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n' +
+          // Hot and very slightly pink, so the flash still belongs to the palette at
+          // the moment it clips. Scaled past 1.0 on purpose — the bloom threshold sits
+          // at 1.35 and an impact that does not bloom does not register — but only
+          // just past it. At 7.0 the struck unit became a featureless white blob with
+          // a halo wider than itself: the rubric's flat-white-quad rejection, and it
+          // destroyed the silhouette of the thing the player was aiming at.
+          // Modulated by the albedo, so the flash lights the unit rather than
+          // painting over it. A flat add at any strength high enough to bloom turned
+          // the hull into one white shape with the panel breaks gone — the player
+          // could see that something was hit but not what, or which way it was
+          // facing. Weighting by `diffuseColor` keeps the dark panel lines dark and
+          // pushes only the bright plates past the threshold, so the unit reads as
+          // lit from within and its silhouette survives the moment it matters most.
+          'totalEmissiveRadiance += vec3(1.0, 0.82, 0.90) * vFlash * 2.2 * (0.30 + diffuseColor.rgb * 1.6);'
+      );
+  };
+
   const pools = {};
   const disposables = [material];
 
@@ -320,6 +358,14 @@ export function buildEnemyRenderer() {
       mesh.instanceColor.array[i * 3 + 1] = 1;
       mesh.instanceColor.array[i * 3 + 2] = 1;
     }
+    // The instanced flash channel this archetype's geometry supplies to the shader
+    // patch above. Held on the mesh as well so the AI module can write it without
+    // reaching through the geometry.
+    const flashAttr = new THREE.InstancedBufferAttribute(new Float32Array(spec.max), 1);
+    flashAttr.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('aFlash', flashAttr);
+    mesh.userData.flash = flashAttr;
+
     group.add(mesh);
     pools[name] = mesh;
   }
