@@ -31,6 +31,26 @@ const BASE = `http://127.0.0.1:${PORT}`;
  * Named capture presets. `steps` is in 1/120s simulation steps.
  * 120 steps = 1 second of game time.
  */
+/**
+ * Build a full sweep's shot list from PRESETS.
+ *
+ * This exists because the "assemble a shot by naming its fields" mistake was made
+ * twice, in two files, and fixed once. Every condition a preset carries —
+ * `minHostiles`, `requireGrounded`, `requireDashing`, `requireAirborneDebris`,
+ * `requireEnemyFlash` — was silently dropped by both call sites, so the QA sweep that
+ * produces every review image had never once applied one. Two of the presets exist
+ * ONLY for their condition; without it they are duplicates of `grounded`, which is
+ * exactly what the sweep was producing. There is one constructor now.
+ */
+export function presetShots(label, seed) {
+  return Object.entries(PRESETS).map(([name, p]) => ({
+    ...p,
+    name,
+    out: `shots/${label}-${name}.png`,
+    seed,
+  }));
+}
+
 export const PRESETS = {
   boot:    { steps: 30,   desc: 'first moments after boot' },
   idle:    { steps: 240,  desc: 'player idle, 2s in' },
@@ -427,12 +447,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // heavy preset was a plain step count all along.
     shots = [{ ...PRESETS[presetName], name: presetName, out: out || `shots/${label}-${presetName}.png`, seed }];
   } else {
-    shots = Object.entries(PRESETS).map(([name, p]) => ({
-      ...p,
-      name,
-      out: `shots/${label}-${name}.png`,
-      seed,
-    }));
+    shots = presetShots(label, seed);
   }
 
   const results = await capture(shots, { quiet: false, verbose: process.argv.includes('--verbose') });

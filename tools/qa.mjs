@@ -13,7 +13,7 @@
  * Exit code is non-zero when a hard budget is blown or the page errored, so this is
  * usable as a gate in the iteration loop.
  */
-import { capture, PRESETS } from './capture.mjs';
+import { capture, presetShots } from './capture.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,13 +37,9 @@ function arg(name, def = null) {
 const label = String(arg('label', 'qa'));
 const seed = Number(arg('seed', 0x5eed1234));
 
-const shots = Object.entries(PRESETS).map(([name, p]) => ({
-  name,
-  steps: p.steps,
-  desc: p.desc,
-  out: `shots/${label}-${name}.png`,
-  seed,
-}));
+// One constructor, shared with capture.mjs. Building this list by hand here is what
+// silently stripped every preset's condition out of the QA sweep — see presetShots.
+const shots = presetShots(label, seed);
 
 console.log(`QA sweep "${label}" — ${shots.length} presets @ seed 0x${seed.toString(16)}\n`);
 const results = await capture(shots, { quiet: false });

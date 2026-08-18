@@ -129,12 +129,19 @@ export class Fragments {
       const a = rnd() * Math.PI * 2;
       // Biased upward and away from the impact normal: fragments come OFF a surface,
       // they do not spray evenly in a sphere.
-      const sp = 7 + rnd() * 15 * (0.6 + amount);
+      //
+      // Speed is capped hard. The first version reached 43 u/s vertically on a heavy
+      // hit, which against gravity of -34 apexes at 27 units — armour chips clearing
+      // the rooftops and reading as dark specks against the skyline. Worse, the
+      // contact decal that makes their height legible fades out above six units, so
+      // the fragments that most needed the cue were the ones without it. Two to five
+      // metres is what comes off a mech.
+      const sp = 5 + rnd() * 9 * (0.5 + amount * 0.5);
       this.x[i] = x + (rnd() - 0.5) * 0.8;
       this.y[i] = y + (rnd() - 0.5) * 0.8;
       this.z[i] = (rnd() - 0.5) * 1.2;
       this.vx[i] = Math.cos(a) * sp * 0.7 + (o.dirX ?? 0) * sp * 0.5;
-      this.vy[i] = Math.abs(Math.sin(a)) * sp + 6 + (o.dirY ?? 0) * sp * 0.3;
+      this.vy[i] = Math.abs(Math.sin(a)) * sp * 0.8 + 4 + (o.dirY ?? 0) * sp * 0.25;
       this.vz[i] = (rnd() - 0.5) * 7;
       this._e.set(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28);
       this.rx[i] = this._e.x;
