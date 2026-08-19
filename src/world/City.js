@@ -434,7 +434,16 @@ export function buildCity(opts = {}) {
   // camera distance anything with real height simply occludes the fight. Keeping the
   // band low puts silhouette along the bottom edge, which frames the action and gives
   // the eye a nearest reference without ever covering it.
-  const foreMat = new THREE.MeshBasicMaterial({ color: 0x02030b, fog: false });
+  // Dark, but not a hole.
+  //
+  // At 0x02030b with fog off this sat at luminance 3 against a road at 60, and a
+  // near-black shape with a hard edge across the bottom corners of the frame does not
+  // read as framing — it reads as a region where the renderer gave up. Foreground
+  // silhouette wants to be the darkest thing present while still being a thing: dark
+  // enough to sit in front of everything, light enough to have an edge rather than
+  // being one. Fog stays on so it belongs to the same atmosphere as the road it
+  // overlaps, even though at this distance fog barely touches it.
+  const foreMat = new THREE.MeshBasicMaterial({ color: 0x161b2c, fog: true });
   disposables.push(foreMat);
   const FORE_N = 26;
   const FORE_Z = 11;

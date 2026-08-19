@@ -336,17 +336,41 @@ export function createAiModule() {
 
     const n = Math.min(18, 6 + Math.floor(waveIndex * 1.8));
 
+    // Composition is a QUOTA, not a dice roll, and it starts mixed.
+    //
+    // Wave 1 used to be entirely grunts, with snipers unlocked at wave 2, flyers at 3
+    // and brutes at 4 — and even then each was an independent 18-32% draw per unit,
+    // so a wave could legitimately contain none of them. A review looking at an early
+    // frame found one humanoid and one quadruped and said, correctly, that two shapes
+    // cannot carry the silhouette axis. It was describing the design, not bad luck.
+    //
+    // The first minute of a game is where a player learns what the enemies ARE, so
+    // the roster reads from the first wave: guaranteed minimums per archetype, filled
+    // out with grunts, and the mix is deliberately front-loaded rather than drip-fed.
+    const quota = { flyer: 0, sniper: 0, brute: 0 };
+    quota.flyer = waveIndex >= 1 ? Math.max(1, Math.round(n * 0.18)) : 0;
+    quota.sniper = waveIndex >= 2 ? Math.max(1, Math.round(n * 0.15)) : 0;
+    quota.brute = waveIndex >= 3 ? Math.max(1, Math.round(n * 0.12)) : 0;
+
+    const roster = [];
+    for (const [type, count] of Object.entries(quota)) {
+      for (let i = 0; i < count; i++) roster.push(type);
+    }
+    while (roster.length < n) roster.push('grunt');
+    // Shuffle so the specials are not all on one side of the arena. Fisher-Yates on
+    // the module rng, so a seed still reproduces the wave exactly.
+    for (let i = roster.length - 1; i > 0; i--) {
+      const j = Math.floor(rng.float() * (i + 1));
+      const t = roster[i];
+      roster[i] = roster[j];
+      roster[j] = t;
+    }
+
     for (let i = 0; i < n; i++) {
       // Spawn off both sides, outside the camera, so they walk into frame.
       const side = rng.bool() ? 1 : -1;
       const x = clamp(px + side * rng.range(20, 34), -115, 115);
-
-      let type = 'grunt';
-      const r = rng.float();
-      if (waveIndex >= 2 && r > 0.82) type = 'sniper';
-      else if (waveIndex >= 3 && r > 0.68) type = 'flyer';
-      else if (waveIndex >= 4 && r > 0.60) type = 'brute';
-
+      const type = roster[i];
       const y = type === 'flyer' ? rng.range(9, 17) : 6;
       api.spawnEnemy(type, x, y);
     }
