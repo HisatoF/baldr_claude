@@ -326,6 +326,12 @@ export function buildEnemyRenderer() {
           // just past it. At 7.0 the struck unit became a featureless white blob with
           // a halo wider than itself: the rubric's flat-white-quad rejection, and it
           // destroyed the silhouette of the thing the player was aiming at.
+          // Strongly magenta, because ACES desaturates as it rolls off. A tint of
+          // (1.0, 0.82, 0.90) measured out at the struck unit as RGB 144,130,151 — a
+          // neutral grey-pink with an R:B ratio of 1.11, which reads as fog rather
+          // than as force. The tint has to be pushed well past where it should look
+          // right in isolation to survive the tone curve at flash intensity.
+          //
           // Modulated by the albedo, so the flash lights the unit rather than
           // painting over it. A flat add at any strength high enough to bloom turned
           // the hull into one white shape with the panel breaks gone — the player
@@ -333,7 +339,7 @@ export function buildEnemyRenderer() {
           // facing. Weighting by `diffuseColor` keeps the dark panel lines dark and
           // pushes only the bright plates past the threshold, so the unit reads as
           // lit from within and its silhouette survives the moment it matters most.
-          'totalEmissiveRadiance += vec3(1.0, 0.82, 0.90) * vFlash * 2.2 * (0.30 + diffuseColor.rgb * 1.6);'
+          'totalEmissiveRadiance += vec3(1.0, 0.26, 0.60) * vFlash * 3.4 * (0.26 + diffuseColor.rgb * 1.7);'
       );
   };
 

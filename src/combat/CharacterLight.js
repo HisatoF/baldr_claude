@@ -78,8 +78,20 @@ export class CharacterLight {
     // measured out as a 220-mean blown highlight beside the player against a road
     // otherwise sitting at 57. The `key` above already carries a comment about
     // exactly this mistake; the fix was never applied to the other two lamps.
-    this.kick = new THREE.PointLight(PALETTE.cyan, 105, 13, 2);
-    this.kick.position.set(-3.4, 4.2, -3.0);
+    //
+    // IN FRONT of the play plane. Every other lamp on this rig is behind it — the key
+    // spot at z = -5.0 and the rim at z = -4.6, both moved back deliberately so their
+    // shadows rake toward the viewer. The consequence went unnoticed until a review
+    // measured the hero: with all three lights behind, every camera-facing surface on
+    // the mech was a back face, and the player's own body came out at p05 6 with its
+    // boot at the same luminance as the shadow under it. The most important object in
+    // the frame was the least legible thing in it.
+    //
+    // So the kicker crosses the plane and becomes a three-quarter front fill. Cool
+    // and weak, because its job is to keep the front faces off the floor of the
+    // histogram, not to flatten the modelling the key is doing.
+    this.kick = new THREE.PointLight(PALETTE.cyan, 210, 16, 2);
+    this.kick.position.set(-3.4, 3.6, 4.4);
     this.group.add(this.kick);
 
     this._boost = 0;
@@ -164,7 +176,7 @@ export class CharacterLight {
 
     this.key.intensity = 900 * b;
     this.rim.intensity = 330 * b;
-    this.kick.intensity = 105 * (1 + thrust * 1.4);
+    this.kick.intensity = 210 * (1 + thrust * 1.4);
   }
 
   dispose() {

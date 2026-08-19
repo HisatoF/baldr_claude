@@ -1046,7 +1046,7 @@ export function createMech(opts = {}) {
     // value is both more correct and far more readable.
     metalness: 0.5,
     emissive: 0x000000,
-    envMapIntensity: 1.55,
+    envMapIntensity: 2.35,
   });
   material.normalScale.set(0.85, 0.85);
   attachVertexResponse(material, emiPulse);

@@ -434,16 +434,36 @@ export function buildCity(opts = {}) {
   // camera distance anything with real height simply occludes the fight. Keeping the
   // band low puts silhouette along the bottom edge, which frames the action and gives
   // the eye a nearest reference without ever covering it.
-  // Dark, but not a hole.
+  // Dark, but not a hole — and LIT, not painted.
   //
-  // At 0x02030b with fog off this sat at luminance 3 against a road at 60, and a
-  // near-black shape with a hard edge across the bottom corners of the frame does not
-  // read as framing — it reads as a region where the renderer gave up. Foreground
-  // silhouette wants to be the darkest thing present while still being a thing: dark
-  // enough to sit in front of everything, light enough to have an edge rather than
-  // being one. Fog stays on so it belongs to the same atmosphere as the road it
-  // overlaps, even though at this distance fog barely touches it.
-  const foreMat = new THREE.MeshBasicMaterial({ color: 0x161b2c, fog: true });
+  // This was `MeshBasicMaterial` at 0x02030b with fog off, which is to say a flat
+  // unlit fill. A review measured the resulting slab at mean 10.5, p05 3, across
+  // about 8% of the frame, and described it exactly right: not a silhouette but a
+  // region where the renderer gave up. Raising the flat colour alone did not fix it,
+  // because the problem was never only the value — an unlit fill has no texture, no
+  // rim and no edge, so it cannot read as an object at any brightness.
+  //
+  // A standard material with the corridor's own concrete on it solves all of that at
+  // once: the key rakes its top edge and gives the silhouette a lit rim, the map
+  // supplies variance, and the value comes out where a near-foreground occluder
+  // wants to be — the darkest thing present while still being a thing.
+  const foreMat = new THREE.MeshStandardMaterial({
+    color: 0x3f4a63,
+    map: concrete.map,
+    normalMap: concrete.normalMap,
+    roughnessMap: concrete.orm,
+    roughness: 0.95,
+    metalness: 0.04,
+    envMapIntensity: 0.7,
+    // A floor under the unlit faces. This band sits between the camera and the
+    // action, so its front face points away from every light in the scene and
+    // renders at zero — a pure-black strip along the bottom edge of the frame,
+    // which is the same defect the flat fill had, just smaller. Nothing this close
+    // to camera in a lit city is actually at zero, and a dim self-illumination is
+    // the cheapest honest way to say so.
+    emissive: 0x141a2e,
+    emissiveIntensity: 1.0,
+  });
   disposables.push(foreMat);
   const FORE_N = 26;
   const FORE_Z = 11;
