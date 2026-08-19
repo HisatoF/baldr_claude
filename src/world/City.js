@@ -195,9 +195,29 @@ export function buildCity(opts = {}) {
   /* ---------------- background skyline ---------------- */
   // Two ranks so the skyline has internal depth. The far rank is dimmer and bluer;
   // the fog does most of that work, but the emissive intensity helps it along.
+  // Emissive is high on purpose — it is fighting the fog, and it has to win by a
+  // margin that survives being multiplied by 0.01.
+  //
+  // Raising the haze fixed the depth ramp and flattened this rank to construction
+  // paper in the same move: at 230 units the fog factor is 0.99, so a wall at 0.02
+  // linear and a lit window at 0.34 both arrive within a hundredth of the haze value
+  // and the whole far skyline collapses to one lavender fill. What survives that mix
+  // is not contrast in the surface, it is magnitude — the 1% that gets through has to
+  // be large enough to matter. At 2.4 a window reads about a third brighter than the
+  // wall beside it after fogging, which is roughly what a distant lit city looks like.
+  // Both ranks pulled forward, because the haze has a hard detail horizon.
+  //
+  // FogExp2 at the current density reaches a factor of 0.99 by 230 units and 0.9999
+  // by 320, so the far rank at z = -300 was receiving one part in ten thousand of its
+  // own colour: no emissive value can survive that, and it rendered as a flat
+  // lavender fill whatever was painted on it. There is no texturing fix for a surface
+  // beyond the haze's detail horizon — the only options are to move it inside that
+  // horizon or to accept a silhouette. Inside, then: ~190 and ~150 units, still far
+  // behind the corridor flanks at 38-74 so the depth ordering is unchanged, but close
+  // enough that a lit window is a lit window rather than one more particle of fog.
   const backRanks = [
-    { z: -300, count: 40, wMin: 16, wMax: 38, hMin: 18, hMax: 78,  emis: 0.20, tint: 0x11182a },
-    { z: -205, count: 30, wMin: 14, wMax: 32, hMin: 14, hMax: 52,  emis: 0.34, tint: 0x161d30 },
+    { z: -190, count: 40, wMin: 16, wMax: 38, hMin: 18, hMax: 78,  emis: 1.7, tint: 0x11182a },
+    { z: -150, count: 30, wMin: 14, wMax: 32, hMin: 14, hMax: 52,  emis: 1.9, tint: 0x161d30 },
   ];
 
   for (let r = 0; r < backRanks.length; r++) {
@@ -461,7 +481,7 @@ export function buildCity(opts = {}) {
     // which is the same defect the flat fill had, just smaller. Nothing this close
     // to camera in a lit city is actually at zero, and a dim self-illumination is
     // the cheapest honest way to say so.
-    emissive: 0x141a2e,
+    emissive: 0x1c2338,
     emissiveIntensity: 1.0,
   });
   disposables.push(foreMat);

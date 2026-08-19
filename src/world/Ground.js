@@ -515,6 +515,16 @@ export function buildGround(opts = {}) {
     roughness: 1.0,
     metalness: 0.12,
     envMapIntensity: 0.5,
+    // A floor under the unlit facets.
+    //
+    // With the buildings and the embankment fixed, a crush mask showed the remaining
+    // black in the frame was almost entirely debris: every shard, plate and kerb face
+    // pointing away from the key and the street bounce renders at zero, and a field of
+    // hard-edged black polygons scattered across a lit road reads as holes punched in
+    // it. These are chunks of concrete in a city full of neon — the side facing away
+    // from the light is dark, not absent.
+    emissive: 0x10141f,
+    emissiveIntensity: 1.0,
   });
   disposables.push(rubbleMat);
 
