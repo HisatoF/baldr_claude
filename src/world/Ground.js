@@ -631,10 +631,14 @@ export function buildGround(opts = {}) {
       rebar.setMatrixAt(i, m.compose(p, q, s));
       // A leaning rod touches the ground at one end; a fallen one lies along its
       // whole length, so its shadow is a streak rather than a dot.
+      // Both tiers strengthened. A review found a standing rod with no shadow at
+      // its base; the decal was there, but at 0.34 it fell into the faint tier and a
+      // 0.75-unit disc under a rod leaning across two metres of road is not a shadow
+      // anyone can see. A prop that meets the ground has to say so.
       propShadows.push(
         lean
-          ? { x, z, rx: 0.75, rz: 0.75, rot: e.y, o: 0.34 }
-          : { x, z, rx: len * 0.62, rz: 0.5, rot: e.y, o: 0.42 }
+          ? { x, z, rx: 1.05, rz: 1.05, rot: e.y, o: 0.52 }
+          : { x, z, rx: len * 0.62, rz: 0.62, rot: e.y, o: 0.58 }
       );
     }
     rebar.instanceMatrix.needsUpdate = true;

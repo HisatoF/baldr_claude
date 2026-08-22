@@ -374,17 +374,46 @@ export function createHudModule() {
             const ay = H * 0.5 + (dy / m) * k;
             const ang = Math.atan2(dy, dx);
 
+            // Treated like the rest of the overlay, not stamped on it.
+            //
+            // These were flat opaque triangles with no stroke, no glow and no
+            // backing, sitting against a scene where every other HUD element is a
+            // thin-stroked bracket with a soft plate behind it. A review picked them
+            // out as the least finished thing on screen and it was right: at 8x they
+            // are hard stairsteps of one solid colour, so they read as placeholder
+            // art rather than as part of the instrument.
             g.save();
             g.translate(ax, ay);
             g.rotate(ang);
-            g.fillStyle = 'rgba(255,61,154,0.82)';
+            // A dim plate first, so the arrow never has to fight the playfield for
+            // contrast the way a bare fill does.
+            g.fillStyle = 'rgba(6,10,18,0.45)';
             g.beginPath();
-            g.moveTo(11, 0);
-            g.lineTo(-7, 7);
-            g.lineTo(-3, 0);
-            g.lineTo(-7, -7);
-            g.closePath();
+            g.arc(0, 0, 13, 0, Math.PI * 2);
             g.fill();
+            const arrow = () => {
+              g.beginPath();
+              g.moveTo(12, 0);
+              g.lineTo(-7, 7.5);
+              g.lineTo(-3, 0);
+              g.lineTo(-7, -7.5);
+              g.closePath();
+            };
+            // Gradient along the bearing: hot at the tip, falling off at the tail, so
+            // the arrow reads as pointing rather than merely as being angled.
+            const grad = g.createLinearGradient(-7, 0, 12, 0);
+            grad.addColorStop(0.0, 'rgba(255,61,154,0.45)');
+            grad.addColorStop(1.0, 'rgba(255,168,214,0.95)');
+            g.fillStyle = grad;
+            g.shadowColor = 'rgba(255,61,154,0.9)';
+            g.shadowBlur = 9;
+            arrow();
+            g.fill();
+            g.shadowBlur = 0;
+            g.strokeStyle = 'rgba(255,216,236,0.75)';
+            g.lineWidth = 1;
+            arrow();
+            g.stroke();
             g.restore();
           }
         }

@@ -339,7 +339,7 @@ export function buildEnemyRenderer() {
           // facing. Weighting by `diffuseColor` keeps the dark panel lines dark and
           // pushes only the bright plates past the threshold, so the unit reads as
           // lit from within and its silhouette survives the moment it matters most.
-          'totalEmissiveRadiance += vec3(1.0, 0.26, 0.60) * vFlash * 3.4 * (0.26 + diffuseColor.rgb * 1.7);'
+          'totalEmissiveRadiance += vec3(1.0, 0.26, 0.60) * vFlash * 2.5 * (0.16 + diffuseColor.rgb * 1.45);'
       );
   };
 

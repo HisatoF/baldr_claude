@@ -133,7 +133,7 @@ export const WEAPONS = [
     id: 'rifle', name: 'AR-92 Assault Rifle', slot: 'both', kind: 'projectile',
     damage: 14, en: 0, startup: 3, active: 1, recovery: 12, cancelAt: 4, cooldown: 9,
     stagger: 6, launch: 0, hitstop: 0.012, shake: 0.06, recoil: 0.12,
-    color: 0xffd08a,
+    color: 0xffb44a,
     fire(ctx, owner, dx, dy) {
       const ox = owner.pos.x + dx * 1.5;
       const oy = owner.pos.y + 0.35;
@@ -145,7 +145,7 @@ export const WEAPONS = [
     id: 'gatling', name: 'GX Rotary Cannon', slot: 'both', kind: 'projectile',
     damage: 8, en: 0, startup: 2, active: 1, recovery: 6, cancelAt: 2, cooldown: 4,
     stagger: 3, launch: 0, hitstop: 0.006, shake: 0.05, recoil: 0.07,
-    color: 0xffc07a,
+    color: 0xffa63d,
     fire(ctx, owner, dx, dy) {
       // Spread grows the longer it is held; the combo module passes the streak in.
       const spread = 0.05 + Math.min(0.12, (this._streak ?? 0) * 0.004);
@@ -160,7 +160,7 @@ export const WEAPONS = [
     id: 'shotgun', name: 'SB-4 Scatter Gun', slot: 'both', kind: 'projectile',
     damage: 11, en: 4, startup: 5, active: 1, recovery: 26, cancelAt: 12, cooldown: 34,
     stagger: 26, launch: 0, hitstop: 0.05, shake: 0.28, recoil: 0.55,
-    color: 0xffb066,
+    color: 0xff9a2e,
     fire(ctx, owner, dx, dy) {
       const ox = owner.pos.x + dx * 1.5;
       const oy = owner.pos.y + 0.3;

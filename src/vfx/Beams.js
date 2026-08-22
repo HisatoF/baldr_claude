@@ -25,11 +25,18 @@ function makeBeamTexture(w = 128, h = 32) {
   across.addColorStop(1.0, 'rgba(255,255,255,0)');
   g.fillStyle = across;
   g.fillRect(0, 0, w, h);
-  // Along the beam: taper both ends so it does not start and stop abruptly.
+  // Along the beam: ASYMMETRIC, hot at the muzzle and trailing off toward the target.
+  //
+  // Both ends used to taper equally over 12%, which on a 9-unit tracer is about a
+  // metre of softening at each tip and reads, correctly, as a constant-width stick
+  // with rounded ends. A tracer is not a stick — it is the visible part of something
+  // leaving a barrel, brightest where it started and thinning as it goes. The
+  // asymmetry is also what tells a still frame which way the shot is travelling,
+  // which a symmetric line cannot do at all.
   const along = g.createLinearGradient(0, 0, w, 0);
   along.addColorStop(0.0, 'rgba(0,0,0,1)');
-  along.addColorStop(0.12, 'rgba(0,0,0,0)');
-  along.addColorStop(0.88, 'rgba(0,0,0,0)');
+  along.addColorStop(0.05, 'rgba(0,0,0,0)');
+  along.addColorStop(0.45, 'rgba(0,0,0,0)');
   along.addColorStop(1.0, 'rgba(0,0,0,1)');
   g.globalCompositeOperation = 'destination-out';
   g.fillStyle = along;
@@ -135,7 +142,12 @@ export class BeamPool {
         // The core collapses faster than the sheath, so the beam appears to burn
         // out from the inside rather than simply dimming.
         const wScale = core ? 0.34 * t : 1.0 * (0.35 + t * 0.65);
-        const bright = core ? 2.6 * t * t : 0.85 * t;
+        // The core decays linearly rather than quadratically. Squared, it was below
+        // the bloom threshold for all but the first frame or two of its life, so a
+        // capture almost never caught a tracer glowing — one measured a peak of 213
+        // against a threshold of 1.35 in linear terms, i.e. a coloured line with no
+        // halo at all. A tracer that never blooms is a decal.
+        const bright = core ? 3.6 * t : 0.85 * t;
         this._s.set(len, Math.max(0.001, this.width[i] * wScale), 1);
         this._m.compose(this._p, this._q, this._s);
         this.mesh.setMatrixAt(inst, this._m);
