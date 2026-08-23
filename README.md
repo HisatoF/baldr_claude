@@ -169,7 +169,28 @@ actually looked at. Four were worth the trouble on their own:
   making streak length a function of framerate. It looked worst on exactly the hardware
   that could least afford it.
 
-One further case cut the other way, and is worth keeping for that reason. A review
+Later rounds added three of the same kind:
+
+- **Haze has a detail horizon.** The far skyline read as construction paper and no
+  emissive value fixed it. FogExp2 at this density reaches a factor of 0.99 by 230
+  units and 0.9999 by 320, so a rank at 300 units was receiving one part in ten
+  thousand of its own colour — whatever is painted on a surface past that horizon,
+  the frame shows fog. There is no texturing fix; the only options are to move it
+  inside the horizon or to accept a silhouette.
+- **Nothing in a lit city sits at zero.** With the buildings and the terrain sorted,
+  the remaining sub-8 pixels were almost entirely debris facets turned away from every
+  light. A field of hard-edged black polygons on a lit road reads as holes punched in
+  it. A dim self-illumination floor on the set dressing is the honest fix — a chunk of
+  concrete surrounded by neon has a dark side, not an absent one.
+- **The whole character rig migrated behind the play plane, one correct move at a
+  time.** The key spot went to z = -5.0 so its shadow would rake toward the viewer;
+  the rim was already at -4.6 for the same reason; the kicker had been pushed back to
+  -3.0 to stop it flooding the road. Each decision was right on its own and the set of
+  them left every lamp behind the mech, so every camera-facing surface on the hero was
+  a back face. Measured: the player's body at p05 6, its boot the same luminance as
+  the shadow beneath it. Nobody was watching the set.
+
+One case cut the other way, and is worth keeping for that reason. A review
 measured colour fringing at 11.75 in the frame centre against 2.84 at the corner,
 called it physically backwards for a lens effect, and asked for the chromatic
 aberration pass to be made radial or removed. Disabling that pass entirely moved the
@@ -215,7 +236,10 @@ worse than no harness — reviewing the image is not optional. And when somethin
 invisible, test whether it is being *drawn* before assuming it is missing — three of
 the four above were fully implemented and simply could not be seen. The corollary is
 that a reviewer's diagnosis is not evidence either: reproduce the measurement against
-a toggled build before changing anything on the strength of it.
+a toggled build before changing anything on the strength of it. That has now happened
+twice — a later review reported the enemies' contact decals as "hard-edged black
+rectangles reading as pasted quads", and at 6x magnification they are soft radial
+ellipses with a clean falloff. Nothing was changed for it.
 
 A third, from the preset bug and from `advanceDeterministic`'s `present` flag: a fix
 is not a fix until you have watched it run. Both of those were correct code sitting in
